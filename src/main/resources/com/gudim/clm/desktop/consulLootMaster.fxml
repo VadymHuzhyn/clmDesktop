@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns:fx="http://javafx.com/fxml" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+      minWidth="-Infinity" prefHeight="155.0" prefWidth="503.0"
+      xmlns="http://javafx.com/javafx" fx:controller="com.gudim.clm.desktop.CLMController">
+    <BorderPane prefHeight="200.0" prefWidth="200.0">
+        <bottom>
+            <Separator prefHeight="3.0" prefWidth="200.0" BorderPane.alignment="CENTER"/>
+        </bottom>
+        <top>
+            <AnchorPane prefHeight="135.0" prefWidth="503.0" BorderPane.alignment="CENTER">
+                <Button fx:id="downloadJson" disable="true" layoutX="34.0" layoutY="87.0"
+                        maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                        mnemonicParsing="false" onMouseClicked="#convertXLSToJSON" prefHeight="25.0"
+                        prefWidth="102.0" text="Download JSON"/>
+                <Button fx:id="uploadJson" disable="true" layoutX="367.0" layoutY="87.0"
+                        maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                        mnemonicParsing="false" onMouseClicked="#convertJSONTonXLS" prefHeight="25.0"
+                        prefWidth="102.0" text="Upload JSON"/>
+                <Button fx:id="directoryChooser" layoutX="228.0" layoutY="14.0" maxHeight="-Infinity"
+                        maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false"
+                        onMouseClicked="#openFile" prefHeight="25.0" prefWidth="48.0" text="Open"/>
+                <Label fx:id="directoryPath" alignment="CENTER" layoutX="4.0" layoutY="51.0"
+                       prefHeight="17.0" prefWidth="497.0" text="Specify the path to the addon"
+                       textAlignment="CENTER"/>
+            </AnchorPane>
+        </top>
+    </BorderPane>
+    <Label fx:id="statusBar" alignment="CENTER_RIGHT" maxHeight="-Infinity" maxWidth="-Infinity"
+           minHeight="-Infinity" minWidth="-Infinity" prefHeight="17.0" prefWidth="503.0"
+           text="Created by Gudim" textAlignment="RIGHT"/>
+</VBox>

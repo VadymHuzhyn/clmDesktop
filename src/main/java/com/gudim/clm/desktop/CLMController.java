@@ -11,15 +11,12 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import lombok.AllArgsConstructor;
 import net.rgielen.fxweaver.core.FxmlView;
 import org.springframework.stereotype.Component;
 
 @Component
 @FxmlView("consulLootMaster.fxml")
-@AllArgsConstructor
 public class CLMController {
-	
 	private final CLMService clmService;
 	@FXML
 	public        Label      statusBar;
@@ -31,6 +28,10 @@ public class CLMController {
 	public        Button     directoryChooser;
 	@FXML
 	public        Label      directoryPath;
+	
+	public CLMController(CLMService clmService) {
+		this.clmService = clmService;
+	}
 	
 	@FXML
 	public void convertXLSToJSON() {

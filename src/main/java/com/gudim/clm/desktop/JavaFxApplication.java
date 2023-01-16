@@ -4,16 +4,14 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import net.rgielen.fxweaver.core.FxWeaver;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 public class JavaFxApplication extends Application {
-	@Value("${clm.title}")
-	private String title;
 	
 	private ConfigurableApplicationContext applicationContext;
 	
@@ -29,7 +27,9 @@ public class JavaFxApplication extends Application {
 		FxWeaver fxWeaver = applicationContext.getBean(FxWeaver.class);
 		Parent root = fxWeaver.loadView(CLMController.class);
 		Scene scene = new Scene(root);
-		stage.setTitle(title);
+		scene.getStylesheets().add(this.getClass().getResource("/main.css").toExternalForm());
+		stage.getIcons().add(new Image(this.getClass().getResourceAsStream("/clmLogo.png")));
+		stage.setTitle("Consul Loot Master v0.0.1");
 		stage.setScene(scene);
 		stage.show();
 	}

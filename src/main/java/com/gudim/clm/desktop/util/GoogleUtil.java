@@ -1,5 +1,10 @@
 package com.gudim.clm.desktop.util;
 
+import static com.gudim.clm.desktop.util.CLMConstant.APPLICATION_NAME;
+import static com.gudim.clm.desktop.util.CLMConstant.CREDENTIALS_JSON;
+import static com.gudim.clm.desktop.util.CLMConstant.DATA_STORE_DIR;
+import static com.gudim.clm.desktop.util.CLMConstant.DRIVE_SCOPE;
+
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
@@ -14,51 +19,39 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.Drive.Builder;
 import com.gudim.clm.desktop.CLMController;
-import com.gudim.clm.desktop.exception.FileNonFoundException;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-
+import com.gudim.clm.desktop.service.CLMBrowserService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
+import lombok.experimental.UtilityClass;
+import lombok.extern.log4j.Log4j2;
 
-import static com.gudim.clm.desktop.util.CLMConstant.APPLICATION_NAME;
-import static com.gudim.clm.desktop.util.CLMConstant.CREDENTIALS_JSON;
-import static com.gudim.clm.desktop.util.CLMConstant.DATA_STORE_DIR;
-import static com.gudim.clm.desktop.util.CLMConstant.DRIVE_SCOPE;
-
+@UtilityClass
+@Log4j2
 public class GoogleUtil {
-
-    private GoogleUtil() {
-    }
-
-    public static Drive getGoogleDriveData() {
-        try {
-            GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-            NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-            InputStream resourceAsStream = CLMController.class.getResourceAsStream(
-                    CREDENTIALS_JSON);
-            Credential credential = getCredential(jsonFactory, httpTransport,
-                    resourceAsStream);
-            return new Builder(httpTransport, jsonFactory, credential)
-                    .setApplicationName(APPLICATION_NAME).build();
-        } catch (GeneralSecurityException | IOException e) {
-            throw new FileNonFoundException(ExceptionUtils.getStackTrace(e));
-        }
-    }
-
-    public static Credential getCredential(JsonFactory jsonFactory, HttpTransport httpTransport,
-                                           InputStream resourceAsStream) throws IOException {
-        FileDataStoreFactory dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR);
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(jsonFactory,
-                new InputStreamReader(
-                        resourceAsStream));
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
-                jsonFactory,
-                clientSecrets,
-                DRIVE_SCOPE)
-                .setDataStoreFactory(dataStoreFactory).build();
-        return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver(),
-                new CustomBrowser()).authorize("user");
-    }
+	
+	public static Drive getGoogleDriveData() throws GeneralSecurityException, IOException {
+		GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+		NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+		InputStream resourceAsStream = CLMController.class.getResourceAsStream(CREDENTIALS_JSON);
+		Credential credential = getCredential(jsonFactory, httpTransport, resourceAsStream);
+		return new Builder(httpTransport, jsonFactory, credential)
+			.setApplicationName(APPLICATION_NAME).build();
+	}
+	
+	public static Credential getCredential(JsonFactory jsonFactory, HttpTransport httpTransport,
+	                                       InputStream resourceAsStream) throws IOException {
+		FileDataStoreFactory dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR);
+		GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(jsonFactory,
+		                                                             new InputStreamReader(
+			                                                             resourceAsStream));
+		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
+		                                                                           jsonFactory,
+		                                                                           clientSecrets,
+		                                                                           DRIVE_SCOPE)
+			.setDataStoreFactory(dataStoreFactory).build();
+		return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver(),
+		                                         new CLMBrowserService()).authorize("user");
+	}
 }

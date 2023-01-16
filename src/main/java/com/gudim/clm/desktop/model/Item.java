@@ -1,27 +1,18 @@
 package com.gudim.clm.desktop.model;
 
 import java.io.Serializable;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
+@Data
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Item implements Serializable {
-
-    private static final long serialVersionUID = -8114615793844935746L;
-    private String itemId;
-    private String wishNumber;
-
-    public String getItemId() {
-        return itemId;
-    }
-
-    public void setItemId(String itemId) {
-        this.itemId = itemId;
-    }
-
-    public String getWishNumber() {
-        return wishNumber;
-    }
-
-    public void setWishNumber(String wishNumber) {
-        this.wishNumber = wishNumber;
-    }
-
+	
+	static final long serialVersionUID = -8114615793844935746L;
+	String itemId;
+	String wishNumber;
+	
 }

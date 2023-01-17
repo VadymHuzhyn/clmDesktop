@@ -1,28 +1,19 @@
 package com.gudim.clm.desktop.service;
 
-import static com.gudim.clm.desktop.util.CLMConstant.AFFEX_ROW;
 import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_CASTER;
 import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_DD;
 import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_HEAL;
 import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_TANK;
 import static com.gudim.clm.desktop.util.CLMConstant.CHAR_DOT;
-import static com.gudim.clm.desktop.util.CLMConstant.CLM_WISHLISTS_INIT;
-import static com.gudim.clm.desktop.util.CLMConstant.CLM_WISHLISTS_START_ROW;
-import static com.gudim.clm.desktop.util.CLMConstant.CLM_WISHLISTS_TYPE_INIT;
-import static com.gudim.clm.desktop.util.CLMConstant.CLOSE_ROW;
 import static com.gudim.clm.desktop.util.CLMConstant.COMMA;
 import static com.gudim.clm.desktop.util.CLMConstant.DOT_REGEX;
-import static com.gudim.clm.desktop.util.CLMConstant.END_ROW_EMPTY;
-import static com.gudim.clm.desktop.util.CLMConstant.END_ROW_INDEX;
-import static com.gudim.clm.desktop.util.CLMConstant.FILE_NAME;
 import static com.gudim.clm.desktop.util.CLMConstant.MESSAGE_HAS_BEEN_REMOVED;
-import static com.gudim.clm.desktop.util.CLMConstant.MIDDLE_ROW;
 import static com.gudim.clm.desktop.util.CLMConstant.NICKNAME_CELL;
 import static com.gudim.clm.desktop.util.CLMConstant.REMOVE_FILE_ERROR_MESSAGE;
 import static com.gudim.clm.desktop.util.CLMConstant.ROW_END_FIRST_VALUE;
 import static com.gudim.clm.desktop.util.CLMConstant.SAVE_LUA_TABLE_ERROR;
 import static com.gudim.clm.desktop.util.CLMConstant.SHEETS_ID;
-import static com.gudim.clm.desktop.util.CLMConstant.START_ROW_INDEX;
+import static com.gudim.clm.desktop.util.CLMConstant.TEMP_FILE_NAME;
 import static com.gudim.clm.desktop.util.CLMConstant.UNEXPECTED_VALUE_ERROR_MESSAGE;
 import static com.gudim.clm.desktop.util.CLMConstant.XLSX_MIME;
 import static org.apache.poi.ss.usermodel.CellType.BLANK;
@@ -118,7 +109,7 @@ public class CLMService {
 	}
 	
 	public void downloadXLSXFromDrive() {
-		try (OutputStream outputStream = Files.newOutputStream(Paths.get(FILE_NAME))) {
+		try (OutputStream outputStream = Files.newOutputStream(Paths.get(TEMP_FILE_NAME))) {
 			Drive drive = GoogleUtil.getGoogleDriveData();
 			File file = drive.files().get(SHEETS_ID).setQuotaUser(UUID.randomUUID().toString())
 			                 .execute();
@@ -137,10 +128,11 @@ public class CLMService {
 		StringBuilder sbCLMItems = new StringBuilder();
 		HashMap<String, List<UserWishDTO>> clmItemsMap = new HashMap<>();
 		XSSFSheet sheet;
-		try (FileInputStream fileInputStream = new FileInputStream(FILE_NAME);
+		try (FileInputStream fileInputStream = new FileInputStream(TEMP_FILE_NAME);
 		     XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
-			sbWishlists.append(CLM_WISHLISTS_INIT).append(StringUtils.LF);
-			sbWishlists.append(CLM_WISHLISTS_TYPE_INIT).append(StringUtils.LF);
+			sbWishlists.append("CLM_wishlists = {}").append(StringUtils.LF);
+			sbWishlists.append("CLM_wishlists_type = {\"heal\", \"dd\", \"caster\", \"tank\"}")
+			           .append(StringUtils.LF);
 			for (int sheetNumber = 1; sheetNumber < workbook.getNumberOfSheets(); sheetNumber++) {
 				String characterType = getCharacterType(sheetNumber);
 				sheet = workbook.getSheetAt(sheetNumber);
@@ -150,13 +142,12 @@ public class CLMService {
 					String nickname = getCellValue(
 						nicknameRow.getCell(nicknameCell, MissingCellPolicy.RETURN_NULL_AND_BLANK));
 					if (StringUtils.isNotEmpty(nickname)) {
-						sbWishlists.append(CLM_WISHLISTS_START_ROW).append(nickname)
-						           .append(END_ROW_EMPTY).append(StringUtils.LF);
-						sbWishlists.append(CLM_WISHLISTS_START_ROW).append(nickname)
-						           .append(MIDDLE_ROW).append(characterType).append(END_ROW_EMPTY)
+						sbWishlists.append("CLM_wishlists[\"").append(nickname).append("\"] = {}")
 						           .append(StringUtils.LF);
-						sbWishlists.append(CLM_WISHLISTS_START_ROW).append(nickname)
-						           .append(MIDDLE_ROW).append(characterType).append(AFFEX_ROW);
+						sbWishlists.append("CLM_wishlists[\"").append(nickname).append("\"][\"")
+						           .append(characterType).append("\"] = {}").append(StringUtils.LF);
+						sbWishlists.append("CLM_wishlists[\"").append(nickname).append("\"][\"")
+						           .append(characterType).append("\"][1] = {");
 						for (int rowNum = sheet.getFirstRowNum() + NumberUtils.INTEGER_ONE;
 						     rowNum < Math.min(ROW_END_FIRST_VALUE, sheet.getLastRowNum());
 						     rowNum++) {
@@ -177,15 +168,15 @@ public class CLMService {
 								List<String> splitCellValue = Arrays.asList(
 									cropIncorrectString(wishNumber).split(DOT_REGEX));
 								String wishNumberDTO = splitCellValue.get(NumberUtils.INTEGER_ZERO);
-								sbWishlists.append(START_ROW_INDEX).append(wishNumberDTO)
-								           .append(END_ROW_INDEX).append(itemId).append(COMMA);
+								sbWishlists.append("[").append(wishNumberDTO).append("] = ")
+								           .append(itemId).append(COMMA);
 								userWishDTO.setWishNumber(wishNumberDTO);
 								if (splitCellValue.size() == NumberUtils.INTEGER_TWO
 									&& !CLMConstant.STRING_ZERO.equals(splitCellValue.get(
 									splitCellValue.size() - NumberUtils.INTEGER_ONE))) {
 									wishNumberDTO = splitCellValue.get(NumberUtils.INTEGER_ONE);
-									sbWishlists.append(START_ROW_INDEX).append(wishNumberDTO)
-									           .append(END_ROW_INDEX).append(itemId).append(COMMA);
+									sbWishlists.append("[").append(wishNumberDTO).append("] = ")
+									           .append(itemId).append(COMMA);
 									userWishDTO.setSecondWishNumber(wishNumberDTO);
 								}
 								userWishDTOList.add(userWishDTO);
@@ -202,7 +193,7 @@ public class CLMService {
 							sbWishlists.deleteCharAt(
 								sbWishlists.length() - NumberUtils.INTEGER_ONE);
 						}
-						sbWishlists.append(CLOSE_ROW).append(StringUtils.LF);
+						sbWishlists.append("}").append(StringUtils.LF);
 					}
 				}
 			}
@@ -214,14 +205,14 @@ public class CLMService {
 					UserWishDTO userWishDTO = value.get(i);
 					int listNumber = i + 1;
 					if (StringUtils.isBlank(userWishDTO.getSecondWishNumber())) {
-						sbCLMItems.append(START_ROW_INDEX).append(listNumber)
+						sbCLMItems.append("[").append(listNumber)
 						          .append("] = {[\"characterType\"] = \"")
 						          .append(userWishDTO.getCharacterType()).append("\",")
 						          .append("[\"nickname\"] = \"").append(userWishDTO.getNickname())
 						          .append("\",").append("[\"wishNumber\"] = \"")
 						          .append(userWishDTO.getWishNumber()).append("\"").append("}");
 					} else if (StringUtils.isNotBlank(userWishDTO.getSecondWishNumber())) {
-						sbCLMItems.append(START_ROW_INDEX).append(listNumber + 1)
+						sbCLMItems.append("[").append(listNumber + 1)
 						          .append("] = {[\"characterType\"] = \"")
 						          .append(userWishDTO.getCharacterType()).append("\",")
 						          .append("[\"nickname\"] = \"").append(userWishDTO.getNickname())
@@ -263,10 +254,10 @@ public class CLMService {
 	
 	public void removeTempFile() {
 		try {
-			Files.delete(Paths.get(FILE_NAME));
-			log.info(FILE_NAME + StringUtils.SPACE + MESSAGE_HAS_BEEN_REMOVED);
+			Files.delete(Paths.get(TEMP_FILE_NAME));
+			log.info(TEMP_FILE_NAME + StringUtils.SPACE + MESSAGE_HAS_BEEN_REMOVED);
 		} catch (IOException e) {
-			log.error(FILE_NAME + StringUtils.SPACE + REMOVE_FILE_ERROR_MESSAGE);
+			log.error(TEMP_FILE_NAME + StringUtils.SPACE + REMOVE_FILE_ERROR_MESSAGE);
 		}
 	}
 }

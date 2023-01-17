@@ -1,30 +1,42 @@
 package com.gudim.clm.desktop.service;
 
+import static com.gudim.clm.desktop.util.CLMConstant.AFFEX_ROW;
+import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_CASTER;
+import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_DD;
+import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_HEAL;
+import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_TANK;
+import static com.gudim.clm.desktop.util.CLMConstant.CHAR_DOT;
+import static com.gudim.clm.desktop.util.CLMConstant.CLM_WISHLISTS_INIT;
+import static com.gudim.clm.desktop.util.CLMConstant.CLM_WISHLISTS_START_ROW;
+import static com.gudim.clm.desktop.util.CLMConstant.CLM_WISHLISTS_TYPE_INIT;
+import static com.gudim.clm.desktop.util.CLMConstant.CLOSE_ROW;
 import static com.gudim.clm.desktop.util.CLMConstant.COMMA;
 import static com.gudim.clm.desktop.util.CLMConstant.DOT_REGEX;
+import static com.gudim.clm.desktop.util.CLMConstant.END_ROW_EMPTY;
+import static com.gudim.clm.desktop.util.CLMConstant.END_ROW_INDEX;
 import static com.gudim.clm.desktop.util.CLMConstant.FILE_NAME;
-import static com.gudim.clm.desktop.util.CLMConstant.FILE_WISHLIST_NAME;
-import static com.gudim.clm.desktop.util.CLMConstant.LUA_FUNCTION_DECODE;
-import static com.gudim.clm.desktop.util.CLMConstant.LUA_SCRIPT_TABLE_PATH;
+import static com.gudim.clm.desktop.util.CLMConstant.MESSAGE_HAS_BEEN_REMOVED;
+import static com.gudim.clm.desktop.util.CLMConstant.MIDDLE_ROW;
 import static com.gudim.clm.desktop.util.CLMConstant.NICKNAME_CELL;
 import static com.gudim.clm.desktop.util.CLMConstant.REMOVE_FILE_ERROR_MESSAGE;
 import static com.gudim.clm.desktop.util.CLMConstant.ROW_END_FIRST_VALUE;
+import static com.gudim.clm.desktop.util.CLMConstant.SAVE_LUA_TABLE_ERROR;
 import static com.gudim.clm.desktop.util.CLMConstant.SHEETS_ID;
+import static com.gudim.clm.desktop.util.CLMConstant.START_ROW_INDEX;
 import static com.gudim.clm.desktop.util.CLMConstant.UNEXPECTED_VALUE_ERROR_MESSAGE;
 import static com.gudim.clm.desktop.util.CLMConstant.XLSX_MIME;
 import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.gudim.clm.desktop.model.Character;
-import com.gudim.clm.desktop.model.Item;
-import com.gudim.clm.desktop.model.Wish;
+import com.gudim.clm.desktop.dto.LuaTableDTO;
+import com.gudim.clm.desktop.dto.UserWishDTO;
 import com.gudim.clm.desktop.util.CLMConstant;
 import com.gudim.clm.desktop.util.GoogleUtil;
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -32,10 +44,10 @@ import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.UUID;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -46,32 +58,28 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.jse.JsePlatform;
 import org.springframework.stereotype.Service;
 
 @Service
 @Log4j2
 public class CLMService {
 	
-	public static String getCharacterTypeName(int sheetNumber) {
-		//todo chane for current type
+	private static String getCharacterType(int sheetNumber) {
 		if (sheetNumber == NumberUtils.INTEGER_ZERO) {
-			return "heal";
+			return CHARACTER_TYPE_HEAL;
 		} else if (sheetNumber == NumberUtils.INTEGER_ONE) {
-			return "dd";
+			return CHARACTER_TYPE_DD;
 		} else if (sheetNumber == NumberUtils.INTEGER_TWO) {
-			return "caster";
+			return CHARACTER_TYPE_CASTER;
 		} else if (sheetNumber == 3) {
-			return "tank";
+			return CHARACTER_TYPE_TANK;
 		} else {
 			throw new IllegalStateException(
 				UNEXPECTED_VALUE_ERROR_MESSAGE + StringUtils.SPACE + sheetNumber);
 		}
 	}
 	
-	public static String getCellValue(Cell cell) {
+	private static String getCellValue(Cell cell) {
 		Object result;
 		CellType cellType = getCellType(cell);
 		switch (cellType) {
@@ -123,97 +131,144 @@ public class CLMService {
 		}
 	}
 	
-	public String convertXLSXToJson() {
-		String payloadStr = StringUtils.EMPTY;
+	public LuaTableDTO luaTableMapper() {
+		LuaTableDTO luaTableDTO = new LuaTableDTO();
+		StringBuilder sbWishlists = new StringBuilder();
+		StringBuilder sbCLMItems = new StringBuilder();
+		HashMap<String, List<UserWishDTO>> clmItemsMap = new HashMap<>();
 		XSSFSheet sheet;
 		try (FileInputStream fileInputStream = new FileInputStream(FILE_NAME);
 		     XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
-			List<Wish> wishList = new ArrayList<>();
-			for (int sheetNumber = 1; sheetNumber < workbook.getNumberOfSheets();
-			     sheetNumber++) { //todo change sheetNumber to NumberUtils.INTEGER_ZERO
-				Wish wish = new Wish();
-				wish.setCharacterTypeName(getCharacterTypeName(sheetNumber));
+			sbWishlists.append(CLM_WISHLISTS_INIT).append(StringUtils.LF);
+			sbWishlists.append(CLM_WISHLISTS_TYPE_INIT).append(StringUtils.LF);
+			for (int sheetNumber = 1; sheetNumber < workbook.getNumberOfSheets(); sheetNumber++) {
+				String characterType = getCharacterType(sheetNumber);
 				sheet = workbook.getSheetAt(sheetNumber);
-				List<Character> characterList = new ArrayList<>();
 				Row nicknameRow = sheet.getRow(sheet.getFirstRowNum());
 				for (int nicknameCell = NICKNAME_CELL; nicknameCell < nicknameRow.getLastCellNum();
 				     nicknameCell++) {
-					List<Item> itemList = new ArrayList<>();
-					for (int rowNum = sheet.getFirstRowNum() + NumberUtils.INTEGER_ONE;
-					     rowNum < Math.min(ROW_END_FIRST_VALUE, sheet.getLastRowNum()); rowNum++) {
-						populateItem(sheet, nicknameCell, itemList, rowNum);
-					}
 					String nickname = getCellValue(
 						nicknameRow.getCell(nicknameCell, MissingCellPolicy.RETURN_NULL_AND_BLANK));
-					if (!itemList.isEmpty() && StringUtils.isNotEmpty(nickname)) {
-						Character character = new Character();
-						character.setNickname(nickname);
-						character.setItem(itemList);
-						characterList.add(character);
+					if (StringUtils.isNotEmpty(nickname)) {
+						sbWishlists.append(CLM_WISHLISTS_START_ROW).append(nickname)
+						           .append(END_ROW_EMPTY).append(StringUtils.LF);
+						sbWishlists.append(CLM_WISHLISTS_START_ROW).append(nickname)
+						           .append(MIDDLE_ROW).append(characterType).append(END_ROW_EMPTY)
+						           .append(StringUtils.LF);
+						sbWishlists.append(CLM_WISHLISTS_START_ROW).append(nickname)
+						           .append(MIDDLE_ROW).append(characterType).append(AFFEX_ROW);
+						for (int rowNum = sheet.getFirstRowNum() + NumberUtils.INTEGER_ONE;
+						     rowNum < Math.min(ROW_END_FIRST_VALUE, sheet.getLastRowNum());
+						     rowNum++) {
+							UserWishDTO userWishDTO = new UserWishDTO();
+							userWishDTO.setNickname(nickname);
+							userWishDTO.setCharacterType(characterType);
+							List<UserWishDTO> userWishDTOList = new ArrayList<>();
+							Row itemRow = sheet.getRow(rowNum);
+							Cell itemIdCell = itemRow.getCell(NumberUtils.INTEGER_TWO,
+							                                  MissingCellPolicy.RETURN_NULL_AND_BLANK);
+							Cell wishNumberCell = itemRow.getCell(nicknameCell,
+							                                      MissingCellPolicy.RETURN_NULL_AND_BLANK);
+							String itemId = getCellValue(itemIdCell);
+							String wishNumber = getCellValue(wishNumberCell);
+							if (StringUtils.isNotBlank(itemId) && StringUtils.isNotBlank(
+								wishNumber)) {
+								itemId = cropIncorrectString(itemId);
+								List<String> splitCellValue = Arrays.asList(
+									cropIncorrectString(wishNumber).split(DOT_REGEX));
+								String wishNumberDTO = splitCellValue.get(NumberUtils.INTEGER_ZERO);
+								sbWishlists.append(START_ROW_INDEX).append(wishNumberDTO)
+								           .append(END_ROW_INDEX).append(itemId).append(COMMA);
+								userWishDTO.setWishNumber(wishNumberDTO);
+								if (splitCellValue.size() == NumberUtils.INTEGER_TWO
+									&& !CLMConstant.STRING_ZERO.equals(splitCellValue.get(
+									splitCellValue.size() - NumberUtils.INTEGER_ONE))) {
+									wishNumberDTO = splitCellValue.get(NumberUtils.INTEGER_ONE);
+									sbWishlists.append(START_ROW_INDEX).append(wishNumberDTO)
+									           .append(END_ROW_INDEX).append(itemId).append(COMMA);
+									userWishDTO.setSecondWishNumber(wishNumberDTO);
+								}
+								userWishDTOList.add(userWishDTO);
+								if (clmItemsMap.containsKey(itemId)) {
+									clmItemsMap.get(itemId).add(userWishDTO);
+								} else {
+									clmItemsMap.put(itemId, userWishDTOList);
+								}
+							}
+						}
+						String convertedSBWishlists = sbWishlists.toString();
+						if (COMMA.equals(convertedSBWishlists.substring(
+							convertedSBWishlists.length() - NumberUtils.INTEGER_ONE))) {
+							sbWishlists.deleteCharAt(
+								sbWishlists.length() - NumberUtils.INTEGER_ONE);
+						}
+						sbWishlists.append(CLOSE_ROW).append(StringUtils.LF);
 					}
 				}
-				wish.setCharacters(characterList);
-				wishList.add(wish);
 			}
-			Gson gson = new GsonBuilder().create();
-			payloadStr = gson.toJson(wishList);
+			sbCLMItems.append("CLM_items = {}").append(StringUtils.LF);
+			for (Entry<String, List<UserWishDTO>> entry : clmItemsMap.entrySet()) {
+				sbCLMItems.append("CLM_items[").append(entry.getKey()).append("] = {");
+				List<UserWishDTO> value = entry.getValue();
+				for (int i = 0; i < value.size(); i++) {
+					UserWishDTO userWishDTO = value.get(i);
+					int listNumber = i + 1;
+					if (StringUtils.isBlank(userWishDTO.getSecondWishNumber())) {
+						sbCLMItems.append(START_ROW_INDEX).append(listNumber)
+						          .append("] = {[\"characterType\"] = \"")
+						          .append(userWishDTO.getCharacterType()).append("\",")
+						          .append("[\"nickname\"] = \"").append(userWishDTO.getNickname())
+						          .append("\",").append("[\"wishNumber\"] = \"")
+						          .append(userWishDTO.getWishNumber()).append("\"").append("}");
+					} else if (StringUtils.isNotBlank(userWishDTO.getSecondWishNumber())) {
+						sbCLMItems.append(START_ROW_INDEX).append(listNumber + 1)
+						          .append("] = {[\"characterType\"] = \"")
+						          .append(userWishDTO.getCharacterType()).append("\",")
+						          .append("[\"nickname\"] = \"").append(userWishDTO.getNickname())
+						          .append("\",").append("[\"wishNumber\"] = \"")
+						          .append(userWishDTO.getSecondWishNumber()).append("\"")
+						          .append("}");
+					}
+					sbCLMItems.append(listNumber == value.size() ? "}" : COMMA);
+				}
+				sbCLMItems.append(StringUtils.LF);
+			}
+			luaTableDTO.setSbWishlists(sbWishlists);
+			luaTableDTO.setSbCLMItems(sbCLMItems);
 		} catch (IOException e) {
 			log.error(ExceptionUtils.getStackTrace(e));
 		}
-		log.info(payloadStr);
-		return payloadStr;
+		return luaTableDTO;
 	}
 	
-	private void populateItem(XSSFSheet sheet, int nicknameCell, List<Item> itemList, int rowNum) {
-		Item item = new Item();
-		Row itemRow = sheet.getRow(rowNum);
-		Cell itemIdCell = itemRow.getCell(NumberUtils.INTEGER_TWO,
-		                                  MissingCellPolicy.RETURN_NULL_AND_BLANK);
-		Cell wishNumberCell = itemRow.getCell(nicknameCell,
-		                                      MissingCellPolicy.RETURN_NULL_AND_BLANK);
-		String itemId = mapperCellValue(itemIdCell);
-		String wishNumber = mapperCellValue(wishNumberCell);
-		if (StringUtils.isNotBlank(itemId) && StringUtils.isNotBlank(wishNumber)) {
-			item.setItemId(Integer.valueOf(itemId));
-			item.setWishNumber(wishNumber);
-			itemList.add(item);
+	public void saveLuaTableFile(StringBuilder stringBuilder, String path) {
+		java.io.File file = new java.io.File(path);
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+			writer.append(stringBuilder);
+		} catch (IOException e) {
+			log.error(String.format(SAVE_LUA_TABLE_ERROR, stringBuilder, path));
 		}
 	}
 	
-	private String mapperCellValue(Cell cell) {
-		List<String> splitCellValue = Arrays.asList(getCellValue(cell).split(DOT_REGEX));
-		String cellValue;
-		if (splitCellValue.size() == NumberUtils.INTEGER_TWO && !CLMConstant.STRING_ZERO.equals(
-			splitCellValue.get(splitCellValue.size() - NumberUtils.INTEGER_ONE))) {
-			cellValue = splitCellValue.get(NumberUtils.INTEGER_ZERO) + COMMA + splitCellValue.get(
-				NumberUtils.INTEGER_ONE);
-		} else {
-			cellValue = splitCellValue.get(NumberUtils.INTEGER_ZERO);
+	private String cropIncorrectString(String incorrectString) {
+		Character charDot = CHAR_DOT;
+		if (charDot.equals(
+			incorrectString.charAt(incorrectString.length() - NumberUtils.INTEGER_TWO))) {
+			incorrectString = incorrectString.substring(NumberUtils.INTEGER_ZERO,
+			                                            incorrectString.length()
+				                                            - NumberUtils.INTEGER_TWO);
 		}
-		return cellValue;
+		return incorrectString;
 	}
 	
-	public void generateLuaTableWishlist(String addonPath, String wishlistJSON) {
-		Globals gl = JsePlatform.standardGlobals();
-		gl.loadfile(LUA_SCRIPT_TABLE_PATH).call();
-		String path = addonPath + FILE_WISHLIST_NAME;
-		gl.get(LUA_FUNCTION_DECODE).call(LuaValue.valueOf(wishlistJSON), LuaValue.valueOf(path));
-		removeFile();
-	}
-	
-	public void removeFile() {
+	public void removeTempFile() {
 		try {
 			Files.delete(Paths.get(FILE_NAME));
+			log.info(FILE_NAME + StringUtils.SPACE + MESSAGE_HAS_BEEN_REMOVED);
 		} catch (IOException e) {
 			log.error(FILE_NAME + StringUtils.SPACE + REMOVE_FILE_ERROR_MESSAGE);
 		}
 	}
-	
-	public java.io.File getFile() {
-		return new DirectoryChooser().showDialog(new Stage());
-	}
-	
-	
 }
 
 

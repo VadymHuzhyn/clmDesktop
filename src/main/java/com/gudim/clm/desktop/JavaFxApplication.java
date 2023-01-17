@@ -27,8 +27,9 @@ public class JavaFxApplication extends Application {
 		FxWeaver fxWeaver = applicationContext.getBean(FxWeaver.class);
 		Parent root = fxWeaver.loadView(CLMController.class);
 		Scene scene = new Scene(root);
-		scene.getStylesheets().add(this.getClass().getResource("/main.css").toExternalForm());
-		stage.getIcons().add(new Image(this.getClass().getResourceAsStream("/clmLogo.png")));
+		scene.getStylesheets().add(this.getClass().getResource("/static/css/main.css").toExternalForm());
+		stage.getIcons().add(new Image(this.getClass().getResourceAsStream(
+			"/static/image/clmLogo.png")));
 		stage.setTitle("Consul Loot Master v0.0.1");
 		stage.setScene(scene);
 		stage.show();

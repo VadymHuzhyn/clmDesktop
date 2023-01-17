@@ -12,6 +12,7 @@ import static com.gudim.clm.desktop.util.CLMConstant.ROW_END_FIRST_VALUE;
 import static com.gudim.clm.desktop.util.CLMConstant.SHEETS_ID;
 import static com.gudim.clm.desktop.util.CLMConstant.UNEXPECTED_VALUE_ERROR_MESSAGE;
 import static com.gudim.clm.desktop.util.CLMConstant.XLSX_MIME;
+import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
@@ -36,11 +37,11 @@ import java.util.UUID;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -59,9 +60,11 @@ public class CLMService {
 		if (sheetNumber == NumberUtils.INTEGER_ZERO) {
 			return "heal";
 		} else if (sheetNumber == NumberUtils.INTEGER_ONE) {
-			return "caster";
-		} else if (sheetNumber == NumberUtils.INTEGER_TWO) {
 			return "dd";
+		} else if (sheetNumber == NumberUtils.INTEGER_TWO) {
+			return "caster";
+		} else if (sheetNumber == 3) {
+			return "tank";
 		} else {
 			throw new IllegalStateException(
 				UNEXPECTED_VALUE_ERROR_MESSAGE + StringUtils.SPACE + sheetNumber);
@@ -70,9 +73,10 @@ public class CLMService {
 	
 	public static String getCellValue(Cell cell) {
 		Object result;
-		switch (cell.getCellType()) {
+		CellType cellType = getCellType(cell);
+		switch (cellType) {
 			case STRING:
-				result = cell.getRichStringCellValue().getString();
+				result = cell.getStringCellValue();
 				break;
 			case NUMERIC:
 				result = cell.getNumericCellValue();
@@ -84,14 +88,25 @@ public class CLMService {
 				result = cell.getCellFormula();
 				break;
 			case _NONE:
+			case ERROR:
 			case BLANK:
 				result = StringUtils.EMPTY;
 				break;
 			default:
 				throw new IllegalStateException(
-					UNEXPECTED_VALUE_ERROR_MESSAGE + StringUtils.SPACE + cell.getCellType());
+					UNEXPECTED_VALUE_ERROR_MESSAGE + StringUtils.SPACE + cellType);
 		}
 		return result.toString();
+	}
+	
+	private static CellType getCellType(Cell cell) {
+		CellType cellType;
+		try {
+			cellType = cell.getCellType();
+		} catch (NullPointerException e) {
+			cellType = BLANK;
+		}
+		return cellType;
 	}
 	
 	public void downloadXLSXFromDrive() {
@@ -113,9 +128,10 @@ public class CLMService {
 		XSSFSheet sheet;
 		try (FileInputStream fileInputStream = new FileInputStream(FILE_NAME);
 		     XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
-			Wish wish = new Wish();
-			for (int sheetNumber = 2; sheetNumber < workbook.getNumberOfSheets();
+			List<Wish> wishList = new ArrayList<>();
+			for (int sheetNumber = 1; sheetNumber < workbook.getNumberOfSheets();
 			     sheetNumber++) { //todo change sheetNumber to NumberUtils.INTEGER_ZERO
+				Wish wish = new Wish();
 				wish.setCharacterTypeName(getCharacterTypeName(sheetNumber));
 				sheet = workbook.getSheetAt(sheetNumber);
 				List<Character> characterList = new ArrayList<>();
@@ -127,18 +143,20 @@ public class CLMService {
 					     rowNum < Math.min(ROW_END_FIRST_VALUE, sheet.getLastRowNum()); rowNum++) {
 						populateItem(sheet, nicknameCell, itemList, rowNum);
 					}
-					if (!itemList.isEmpty()) {
+					String nickname = getCellValue(
+						nicknameRow.getCell(nicknameCell, MissingCellPolicy.RETURN_NULL_AND_BLANK));
+					if (!itemList.isEmpty() && StringUtils.isNotEmpty(nickname)) {
 						Character character = new Character();
-						character.setNickname(getCellValue(nicknameRow.getCell(nicknameCell,
-						                                                       Row.MissingCellPolicy.RETURN_NULL_AND_BLANK)));
+						character.setNickname(nickname);
 						character.setItem(itemList);
 						characterList.add(character);
 					}
 				}
 				wish.setCharacters(characterList);
-				Gson gson = new GsonBuilder().create();
-				payloadStr = gson.toJson(wish);
+				wishList.add(wish);
 			}
+			Gson gson = new GsonBuilder().create();
+			payloadStr = gson.toJson(wishList);
 		} catch (IOException e) {
 			log.error(ExceptionUtils.getStackTrace(e));
 		}
@@ -153,23 +171,26 @@ public class CLMService {
 		                                  MissingCellPolicy.RETURN_NULL_AND_BLANK);
 		Cell wishNumberCell = itemRow.getCell(nicknameCell,
 		                                      MissingCellPolicy.RETURN_NULL_AND_BLANK);
-		if (ObjectUtils.isEmpty(itemIdCell) || ObjectUtils.isEmpty(wishNumberCell)) {
-			return;
-		}
-		List<String> split = Arrays.asList(getCellValue(wishNumberCell).split(DOT_REGEX));
-		String wishNumber;
-		if (split.size() == NumberUtils.INTEGER_TWO && !CLMConstant.STRING_ZERO.equals(
-			split.get(split.size() - NumberUtils.INTEGER_ONE))) {
-			wishNumber = split.get(NumberUtils.INTEGER_ZERO) + COMMA + split.get(
-				NumberUtils.INTEGER_ONE);
-		} else {
-			wishNumber = split.get(NumberUtils.INTEGER_ZERO);
-		}
-		if (StringUtils.isNotEmpty(wishNumber)) {
+		String itemId = mapperCellValue(itemIdCell);
+		String wishNumber = mapperCellValue(wishNumberCell);
+		if (StringUtils.isNotBlank(itemId) && StringUtils.isNotBlank(wishNumber)) {
+			item.setItemId(Integer.valueOf(itemId));
 			item.setWishNumber(wishNumber);
-			item.setItemId(getCellValue(itemIdCell));
 			itemList.add(item);
 		}
+	}
+	
+	private String mapperCellValue(Cell cell) {
+		List<String> splitCellValue = Arrays.asList(getCellValue(cell).split(DOT_REGEX));
+		String cellValue;
+		if (splitCellValue.size() == NumberUtils.INTEGER_TWO && !CLMConstant.STRING_ZERO.equals(
+			splitCellValue.get(splitCellValue.size() - NumberUtils.INTEGER_ONE))) {
+			cellValue = splitCellValue.get(NumberUtils.INTEGER_ZERO) + COMMA + splitCellValue.get(
+				NumberUtils.INTEGER_ONE);
+		} else {
+			cellValue = splitCellValue.get(NumberUtils.INTEGER_ZERO);
+		}
+		return cellValue;
 	}
 	
 	public void generateLuaTableWishlist(String addonPath, String wishlistJSON) {

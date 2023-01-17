@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 public class Item implements Serializable {
 	
 	static final long serialVersionUID = -8114615793844935746L;
-	String itemId;
+	Integer itemId;
 	String wishNumber;
 	
 }

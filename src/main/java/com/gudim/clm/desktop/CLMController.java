@@ -15,7 +15,7 @@ import net.rgielen.fxweaver.core.FxmlView;
 import org.springframework.stereotype.Component;
 
 @Component
-@FxmlView("consulLootMaster.fxml")
+@FxmlView("CLM.fxml")
 public class CLMController {
 	private final CLMService clmService;
 	@FXML

@@ -1,4 +1,4 @@
-local json = require "script.json"
+local json = require "json"
 
 function decodeTable(t, f)
     t = json.decode(t)
@@ -29,6 +29,7 @@ function decodeTable(t, f)
         printTableHelper(t)
     else
         io.output(f)
+        io.write("table = ")
         printTableHelper(t)
         io.output(io.stdout)
     end
@@ -37,3 +38,31 @@ end
 function encodeTable(t)
     return json.encode(t)
 end
+
+function printAll(t, tabs)
+    local nesting = ""
+    for i = 0, tabs, 1 do
+        nesting = nesting .. "\t"
+    end
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            print(nesting .. k .. " = {")
+            printAll(v, tabs + 1)
+            print(nesting .. "}")
+        else
+            print(nesting .. k .. " = " .. v)
+        end
+    end
+end
+
+function tablelength(T)
+    local count = 0
+    for _ in pairs(T) do count = count + 1 end
+    return count
+end
+
+--print("table = {")
+--printAll(table, 0)
+--print("}")
+
+--print(tablelength(table))

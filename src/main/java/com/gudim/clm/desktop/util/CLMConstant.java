@@ -21,6 +21,7 @@ public class CLMConstant {
 	public static final String DOT_REGEX          = "\\.";
 	public static final String COMMA              = ",";
 	public static final String CLOSE_CURLY_BRACES = "}";
+	public static final String NUMBER_SIGN        = "#";
 	
 	public static final String ADDON_PATH             = "Interface\\AddOns\\CLM";
 	public static final String PATH_CLM_WISHLISTS_LUA = "\\CLM_wishlists.lua";
@@ -34,6 +35,7 @@ public class CLMConstant {
 	public static final String MESSAGE_HAS_BEEN_REMOVED       = "%s has been removed";
 	public static final String SAVE_LUA_TABLE_ERROR           = "Can`t write data: \n%s\nto %s";
 	public static final String SAVE_LUA_TABLE                 = "The file: \"%s\" has been generated";
+	public static final String CREATED_TEMP_FILE_MESSAGE      = "Temp file %s has been created";
 	
 	public static final String CHARACTER_TYPE_HEAL   = "heal";
 	public static final String CHARACTER_TYPE_DD     = "dd";

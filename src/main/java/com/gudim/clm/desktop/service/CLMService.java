@@ -7,6 +7,7 @@ import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_TANK;
 import static com.gudim.clm.desktop.util.CLMConstant.CLM_ITEMS_TEMPLATE;
 import static com.gudim.clm.desktop.util.CLMConstant.CLOSE_CURLY_BRACES;
 import static com.gudim.clm.desktop.util.CLMConstant.COMMA;
+import static com.gudim.clm.desktop.util.CLMConstant.CREATED_TEMP_FILE_MESSAGE;
 import static com.gudim.clm.desktop.util.CLMConstant.DOT_REGEX;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_ARRAY_CLM_WISHLISTS;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_CLM_ITEMS;
@@ -20,6 +21,7 @@ import static com.gudim.clm.desktop.util.CLMConstant.INT_150;
 import static com.gudim.clm.desktop.util.CLMConstant.INT_3;
 import static com.gudim.clm.desktop.util.CLMConstant.INT_4;
 import static com.gudim.clm.desktop.util.CLMConstant.MESSAGE_HAS_BEEN_REMOVED;
+import static com.gudim.clm.desktop.util.CLMConstant.NUMBER_SIGN;
 import static com.gudim.clm.desktop.util.CLMConstant.REMOVE_FILE_ERROR_MESSAGE;
 import static com.gudim.clm.desktop.util.CLMConstant.SAVE_LUA_TABLE;
 import static com.gudim.clm.desktop.util.CLMConstant.SAVE_LUA_TABLE_ERROR;
@@ -95,7 +97,7 @@ public class CLMService {
 				result = cell.getStringCellValue();
 				break;
 			case NUMERIC:
-				DecimalFormat decimalFormat = new DecimalFormat("#");
+				DecimalFormat decimalFormat = new DecimalFormat(NUMBER_SIGN);
 				decimalFormat.setRoundingMode(RoundingMode.CEILING);
 				result = isDecimalPointZero(cell.getNumericCellValue()) ? decimalFormat.format(
 					cell.getNumericCellValue()) : Double.valueOf(cell.getNumericCellValue());
@@ -111,7 +113,8 @@ public class CLMService {
 			case BLANK:
 				break;
 			default:
-				log.error(String.format(UNEXPECTED_VALUE_ERROR_MESSAGE, cellType));
+				throw new IllegalStateException(
+					String.format(UNEXPECTED_VALUE_ERROR_MESSAGE, cellType));
 		}
 		return result.toString();
 	}
@@ -142,7 +145,7 @@ public class CLMService {
 			drive.files().export(file.getId(), XLSX_MIME)
 			     .executeAndDownloadTo(byteArrayOutputStream);
 			byteArrayOutputStream.writeTo(outputStream);
-			log.info(String.format("Temp file %s has been created", TEMP_FILE_NAME));
+			log.info(String.format(CREATED_TEMP_FILE_MESSAGE, TEMP_FILE_NAME));
 		} catch (IOException | GeneralSecurityException e) {
 			log.error(ExceptionUtils.getStackTrace(e));
 		}

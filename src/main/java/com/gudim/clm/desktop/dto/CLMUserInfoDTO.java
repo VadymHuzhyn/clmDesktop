@@ -8,8 +8,11 @@ import lombok.experimental.FieldDefaults;
 @Data
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LuaTableDTO {
+public class CLMUserInfoDTO {
 	
-	StringBuilder sbWishlists;
-	StringBuilder sbCLMItems;
+	String characterType;
+	String wishNumber;
+	String secondWishNumber;
+	String nickname;
+	String itemId;
 }

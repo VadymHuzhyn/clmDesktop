@@ -13,8 +13,7 @@ plugins {
 apply plugin: 'io.github.fvarrui.javapackager.plugin'
 
 group 'com.gudim'
-version '0.0.1'
-sourceCompatibility = JavaVersion.VERSION_1_8
+version '0.0.1a'
 
 repositories {
     mavenCentral()

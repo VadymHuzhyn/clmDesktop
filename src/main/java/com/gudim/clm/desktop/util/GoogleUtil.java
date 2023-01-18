@@ -2,6 +2,10 @@ package com.gudim.clm.desktop.util;
 
 import static com.gudim.clm.desktop.util.CLMConstant.APPLICATION_NAME;
 import static com.gudim.clm.desktop.util.CLMConstant.CREDENTIALS_JSON;
+import static com.gudim.clm.desktop.util.CLMConstant.GOOGLE_DRIVE_API_URL;
+import static com.gudim.clm.desktop.util.CLMConstant.STORE_CHILD_DIR;
+import static com.gudim.clm.desktop.util.CLMConstant.USER_HOME_DIR;
+import static com.gudim.clm.desktop.util.CLMConstant.USER_ID;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -43,7 +47,7 @@ public class GoogleUtil {
 	public static Credential getCredential(JsonFactory jsonFactory, HttpTransport httpTransport,
 	                                       InputStream resourceAsStream) throws IOException {
 		FileDataStoreFactory dataStoreFactory = new FileDataStoreFactory(
-			new File(System.getProperty("user.home"), ".store/oauth2_sample"));
+			new File(System.getProperty(USER_HOME_DIR), STORE_CHILD_DIR));
 		GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(jsonFactory,
 		                                                             new InputStreamReader(
 			                                                             resourceAsStream));
@@ -51,9 +55,9 @@ public class GoogleUtil {
 		                                                                           jsonFactory,
 		                                                                           clientSecrets,
 		                                                                           Collections.singleton(
-			                                                                           "https://www.googleapis.com/auth/drive"))
+			                                                                           GOOGLE_DRIVE_API_URL))
 			.setDataStoreFactory(dataStoreFactory).build();
 		return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver(),
-		                                         new CLMBrowserService()).authorize("user");
+		                                         new CLMBrowserService()).authorize(USER_ID);
 	}
 }

@@ -6,7 +6,8 @@ import static com.gudim.clm.desktop.util.CLMConstant.INCORRECT_DIRECTORY_MESSAGE
 import static com.gudim.clm.desktop.util.CLMConstant.PATH_CLM_ITEMS_LUA;
 import static com.gudim.clm.desktop.util.CLMConstant.PATH_CLM_WISHLISTS_LUA;
 
-import com.gudim.clm.desktop.dto.LuaTableDTO;
+import com.gudim.clm.desktop.dto.CLMLuaTableDTO;
+import com.gudim.clm.desktop.dto.CLMMapDTO;
 import com.gudim.clm.desktop.service.CLMService;
 import java.io.File;
 import javafx.fxml.FXML;
@@ -41,16 +42,19 @@ public class CLMController {
 	@FXML
 	public void convertXLSToJSON() {
 		clmService.downloadXLSXFromDrive();
-		LuaTableDTO luaTableDTO = clmService.luaTableMapper();
-		clmService.saveLuaTableFile(luaTableDTO.getSbWishlists(), PATH_CLM_WISHLISTS_LUA);
-		clmService.saveLuaTableFile(luaTableDTO.getSbCLMItems(), PATH_CLM_ITEMS_LUA);
+		CLMMapDTO clmMapDTO = clmService.getDataFromXLSX();
+		CLMLuaTableDTO clmLuaTableDTO = clmService.luaTableMapper(clmMapDTO);
+		clmService.saveLuaTableFile(clmLuaTableDTO.getSbWishlists(),
+		                            directoryPath.getText() + PATH_CLM_WISHLISTS_LUA);
+		clmService.saveLuaTableFile(clmLuaTableDTO.getSbCLMItems(),
+		                            directoryPath.getText() + PATH_CLM_ITEMS_LUA);
 		clmService.removeTempFile();
 		
 	}
 	
 	@FXML
 	public void convertJSONTonXLS() {
-		// need fix WoW API addon libs
+		//todo need fix WoW API addon libs
 	}
 	
 	@FXML

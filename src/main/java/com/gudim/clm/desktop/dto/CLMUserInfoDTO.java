@@ -1,6 +1,5 @@
-package com.gudim.clm.desktop.model;
+package com.gudim.clm.desktop.dto;
 
-import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -9,10 +8,11 @@ import lombok.experimental.FieldDefaults;
 @Data
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Item implements Serializable {
+public class CLMUserInfoDTO {
 	
-	static final long serialVersionUID = -8114615793844935746L;
-	Integer itemId;
+	String characterType;
 	String wishNumber;
-	
+	String secondWishNumber;
+	String nickname;
+	String itemId;
 }

@@ -1,16 +1,21 @@
 package com.gudim.clm.desktop;
 
+import static com.gudim.clm.desktop.util.CLMConstant.TITLE;
+
+import java.util.Objects;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import lombok.extern.log4j.Log4j2;
 import net.rgielen.fxweaver.core.FxWeaver;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
+@Log4j2
 public class JavaFxApplication extends Application {
 	
 	private ConfigurableApplicationContext applicationContext;
@@ -27,9 +32,12 @@ public class JavaFxApplication extends Application {
 		FxWeaver fxWeaver = applicationContext.getBean(FxWeaver.class);
 		Parent root = fxWeaver.loadView(CLMController.class);
 		Scene scene = new Scene(root);
-		scene.getStylesheets().add(this.getClass().getResource("/main.css").toExternalForm());
-		stage.getIcons().add(new Image(this.getClass().getResourceAsStream("/clmLogo.png")));
-		stage.setTitle("Consul Loot Master v0.0.1");
+		scene.getStylesheets().add(
+			Objects.requireNonNull(this.getClass().getResource("/static/css/main.css"))
+			       .toExternalForm());
+		stage.getIcons().add(new Image(Objects.requireNonNull(
+			this.getClass().getResourceAsStream("/static/image/clmLogo.png"))));
+		stage.setTitle(TITLE);
 		stage.setScene(scene);
 		stage.show();
 	}
@@ -39,5 +47,4 @@ public class JavaFxApplication extends Application {
 		this.applicationContext.close();
 		Platform.exit();
 	}
-	
 }

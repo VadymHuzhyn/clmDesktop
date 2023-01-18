@@ -1,9 +1,0 @@
-{
-  "properties": [
-    {
-      "name": "clm.title",
-      "type": "java.lang.String",
-      "description": "Application title"
-    }
-  ]
-}

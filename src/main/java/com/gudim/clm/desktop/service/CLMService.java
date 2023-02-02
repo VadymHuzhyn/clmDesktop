@@ -1,24 +1,24 @@
 package com.gudim.clm.desktop.service;
 
+import static com.gudim.clm.desktop.util.CLMConstant.ARRAY_NICKNAME;
 import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_CASTER;
-import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_DD;
-import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_HEAL;
-import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_TANK;
+import static com.gudim.clm.desktop.util.CLMConstant.CHARACTER_TYPE_MELEE;
 import static com.gudim.clm.desktop.util.CLMConstant.CLM_ITEMS_TEMPLATE;
 import static com.gudim.clm.desktop.util.CLMConstant.CLOSE_CURLY_BRACES;
 import static com.gudim.clm.desktop.util.CLMConstant.COMMA;
 import static com.gudim.clm.desktop.util.CLMConstant.CREATED_TEMP_FILE_MESSAGE;
+import static com.gudim.clm.desktop.util.CLMConstant.DELIMITER_REGEX;
+import static com.gudim.clm.desktop.util.CLMConstant.DOT;
 import static com.gudim.clm.desktop.util.CLMConstant.DOT_REGEX;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_ARRAY_CLM_WISHLISTS;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_CLM_ITEMS;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_CLM_WISHLISTS_TYPE;
-import static com.gudim.clm.desktop.util.CLMConstant.INIT_EMPTY_ARRAY_CLM_WISHLISTS;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_EMPTY_CLM_ITEMS;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_EMPTY_CLM_WISHLISTS;
 import static com.gudim.clm.desktop.util.CLMConstant.INIT_EMPTY_LIST_CLM_WISHLISTS;
 import static com.gudim.clm.desktop.util.CLMConstant.INT_100;
 import static com.gudim.clm.desktop.util.CLMConstant.INT_150;
-import static com.gudim.clm.desktop.util.CLMConstant.INT_3;
+import static com.gudim.clm.desktop.util.CLMConstant.NICKNAME_CELL;
 import static com.gudim.clm.desktop.util.CLMConstant.INT_4;
 import static com.gudim.clm.desktop.util.CLMConstant.MESSAGE_HAS_BEEN_REMOVED;
 import static com.gudim.clm.desktop.util.CLMConstant.NUMBER_SIGN;
@@ -50,11 +50,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import lombok.extern.log4j.Log4j2;
@@ -64,6 +66,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -75,14 +78,10 @@ import org.springframework.stereotype.Service;
 public class CLMService {
 	
 	private static String getCharacterType(int sheetNumber) {
-		if (sheetNumber == NumberUtils.INTEGER_ZERO) {
-			return CHARACTER_TYPE_HEAL;
-		} else if (sheetNumber == NumberUtils.INTEGER_ONE) {
-			return CHARACTER_TYPE_DD;
-		} else if (sheetNumber == NumberUtils.INTEGER_TWO) {
+		if (sheetNumber == NumberUtils.INTEGER_ONE) {
 			return CHARACTER_TYPE_CASTER;
-		} else if (sheetNumber == INT_3) {
-			return CHARACTER_TYPE_TANK;
+		} else if (sheetNumber == NumberUtils.INTEGER_TWO) {
+			return CHARACTER_TYPE_MELEE;
 		} else {
 			throw new IllegalStateException(
 				String.format(UNEXPECTED_VALUE_ERROR_MESSAGE, sheetNumber));
@@ -97,10 +96,12 @@ public class CLMService {
 				result = cell.getStringCellValue();
 				break;
 			case NUMERIC:
-				DecimalFormat decimalFormat = new DecimalFormat(NUMBER_SIGN);
-				decimalFormat.setRoundingMode(RoundingMode.CEILING);
-				result = isDecimalPointZero(cell.getNumericCellValue()) ? decimalFormat.format(
-					cell.getNumericCellValue()) : Double.valueOf(cell.getNumericCellValue());
+				if (DateUtil.isCellDateFormatted(cell)) {
+					SimpleDateFormat sdf = new SimpleDateFormat("MM/dd");
+					result = sdf.format(cell.getDateCellValue());
+				} else {
+					result = getCellNumericValue(cell);
+				}
 				break;
 			case BOOLEAN:
 				result = cell.getBooleanCellValue();
@@ -117,6 +118,18 @@ public class CLMService {
 					String.format(UNEXPECTED_VALUE_ERROR_MESSAGE, cellType));
 		}
 		return result.toString();
+	}
+	
+	private static Object getCellNumericValue(Cell cell) {
+		Object result;
+		DecimalFormat decimalFormat = new DecimalFormat(NUMBER_SIGN);
+		decimalFormat.setRoundingMode(RoundingMode.CEILING);
+		result = isDecimalPointZero(cell.getNumericCellValue()) ? decimalFormat.format(
+			cell.getNumericCellValue()) : Double.valueOf(cell.getNumericCellValue());
+		return result;
+	}
+	
+	private static void convertWrongDateValue(Cell cell) {
 	}
 	
 	private static boolean isDecimalPointZero(double numericCellValue) {
@@ -164,7 +177,7 @@ public class CLMService {
 				HashMap<String, List<CLMUserInfoDTO>> wishlistMap = new HashMap<>();
 				sheet = workbook.getSheetAt(sheetNumber);
 				Row nicknameRow = sheet.getRow(sheet.getFirstRowNum());
-				for (int nicknameCell = INT_3; nicknameCell < nicknameRow.getLastCellNum();
+				for (int nicknameCell = NICKNAME_CELL; nicknameCell < nicknameRow.getLastCellNum();
 				     nicknameCell++) {
 					Cell nicknameCellValue = nicknameRow.getCell(nicknameCell,
 					                                             MissingCellPolicy.RETURN_NULL_AND_BLANK);
@@ -178,8 +191,8 @@ public class CLMService {
 						CLMUserInfoDTO clmItemDTO = new CLMUserInfoDTO();
 						clmItemDTO.setNickname(nickname);
 						clmItemDTO.setCharacterType(characterType);
-						String itemId = getCellValue(itemRow.getCell(NumberUtils.INTEGER_TWO,
-						                                             MissingCellPolicy.RETURN_NULL_AND_BLANK));
+						String itemId = getCellValue(
+							itemRow.getCell(3, MissingCellPolicy.RETURN_NULL_AND_BLANK));
 						String wishNumber = getCellValue(
 							itemRow.getCell(nicknameCell, MissingCellPolicy.RETURN_NULL_AND_BLANK));
 						if (isValidCellData(itemId, wishNumber, nickname)) {
@@ -220,7 +233,8 @@ public class CLMService {
 	
 	private void setWishNumber(CLMUserInfoDTO clmItemDTO, CLMUserInfoDTO clmWishlistDTO,
 	                           String wishNumber) {
-		List<String> splitCellValue = Arrays.asList(wishNumber.split(DOT_REGEX));
+		List<String> splitCellValue = Arrays.asList(
+			wishNumber.replaceAll(DELIMITER_REGEX, DOT).split(DOT_REGEX));
 		String wishNumberDTO = splitCellValue.get(NumberUtils.INTEGER_ZERO);
 		clmItemDTO.setWishNumber(wishNumberDTO);
 		clmWishlistDTO.setWishNumber(wishNumberDTO);
@@ -234,7 +248,8 @@ public class CLMService {
 	private boolean isValidCellData(String itemId, String wishNumber, String nickname) {
 		return StringUtils.isNotBlank(itemId)
 			&& StringUtils.isNotBlank(wishNumber)
-			&& StringUtils.isNotBlank(nickname);
+			&& StringUtils.isNotBlank(nickname)
+			&& !StringUtils.contains(wishNumber, "+");
 	}
 	
 	public CLMLuaTableDTO luaTableMapper(CLMMapDTO clmMapDTO) {
@@ -278,36 +293,35 @@ public class CLMService {
 	
 	private void populateSbWishlist(CLMMapDTO clmMapDTO, StringBuilder sbWishlists) {
 		log.info("Started writing data to CLMWishlists LuaTable");
-		sbWishlists.append(INIT_EMPTY_CLM_WISHLISTS).append(StringUtils.LF);
 		sbWishlists.append(
-			String.format(INIT_CLM_WISHLISTS_TYPE, CHARACTER_TYPE_HEAL, CHARACTER_TYPE_DD,
-			              CHARACTER_TYPE_CASTER, CHARACTER_TYPE_TANK, StringUtils.LF));
+			String.format(INIT_CLM_WISHLISTS_TYPE, CHARACTER_TYPE_MELEE, CHARACTER_TYPE_CASTER));
+		sbWishlists.append(INIT_EMPTY_CLM_WISHLISTS).append(StringUtils.LF);
 		Map<String, HashMap<String, List<CLMUserInfoDTO>>> clmWishlistMap = clmMapDTO.getClmWishlistMap();
-		clmWishlistMap.forEach(
-			(characterType, mapEntryValue) -> mapEntryValue.forEach((nickname, value) -> {
-				sbWishlists.append(
-					String.format(INIT_EMPTY_LIST_CLM_WISHLISTS, nickname, StringUtils.LF));
-				sbWishlists.append(
-					String.format(INIT_EMPTY_ARRAY_CLM_WISHLISTS, nickname, characterType,
-					              StringUtils.LF));
-				sbWishlists.append(
-					String.format(INIT_ARRAY_CLM_WISHLISTS, nickname, characterType));
-				value.forEach(clmUserInfoDTO -> {
+		for (Entry<String, HashMap<String, List<CLMUserInfoDTO>>> entry : clmWishlistMap.entrySet()) {
+			String characterType = entry.getKey();
+			HashMap<String, List<CLMUserInfoDTO>> mapEntryValue = entry.getValue();
+			sbWishlists.append(String.format(INIT_EMPTY_LIST_CLM_WISHLISTS, characterType));
+			sbWishlists.append(String.format(INIT_ARRAY_CLM_WISHLISTS, characterType));
+			for (Entry<String, List<CLMUserInfoDTO>> e : mapEntryValue.entrySet()) {
+				String nickname = e.getKey();
+				List<CLMUserInfoDTO> value = e.getValue();
+				sbWishlists.append(String.format(ARRAY_NICKNAME, nickname));
+				for (CLMUserInfoDTO clmUserInfoDTO : value) {
 					String itemId = clmUserInfoDTO.getItemId();
 					sbWishlists.append(
 						String.format(VALUE_IN_LIST, clmUserInfoDTO.getWishNumber(), itemId));
 					String secondWishNumber = clmUserInfoDTO.getSecondWishNumber();
 					if (StringUtils.isNotBlank(secondWishNumber)) {
+						sbWishlists.append(COMMA);
 						sbWishlists.append(String.format(VALUE_IN_LIST, secondWishNumber, itemId));
 					}
-				});
-				String convertedSBWishlists = sbWishlists.toString();
-				if (COMMA.equals(convertedSBWishlists.substring(
-					convertedSBWishlists.length() - NumberUtils.INTEGER_ONE))) {
-					sbWishlists.deleteCharAt(sbWishlists.length() - NumberUtils.INTEGER_ONE);
+					sbWishlists.append(COMMA);
 				}
-				sbWishlists.append(CLOSE_CURLY_BRACES).append(StringUtils.LF);
-			}));
+				sbWishlists.deleteCharAt(sbWishlists.lastIndexOf(COMMA)).append(CLOSE_CURLY_BRACES)
+				           .append(COMMA);
+			}
+			sbWishlists.deleteCharAt(sbWishlists.lastIndexOf(COMMA)).append(CLOSE_CURLY_BRACES);
+		}
 		log.info("Completed writing data to CLMItems LuaTable");
 	}
 	

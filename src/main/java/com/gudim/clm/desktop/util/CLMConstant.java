@@ -13,12 +13,15 @@ public class CLMConstant {
 	public static final String STORE_CHILD_DIR      = ".store/oauth2_sample";
 	public static final String CREDENTIALS_JSON     = "/credentials.json";
 	public static final String GOOGLE_DRIVE_API_URL = "https://www.googleapis.com/auth/drive";
-	public static final String SHEETS_ID            = "1yj2BccuTImY17eGaSwCjAZI_yWF9ug8A2iW57a6KcOM";
+	//	public static final String SHEETS_ID            = "1yj2BccuTImY17eGaSwCjAZI_yWF9ug8A2iW57a6KcOM";
+	public static final String SHEETS_ID            = "1GZor1yPCKZpc2kAajFBxljNvAPDz2WjUuJnM53_JPVw";
 	
 	public static final String TEMP_FILE_NAME = "temp.xlsx";
 	public static final String XLSX_MIME      = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 	
+	public static final String DELIMITER_REGEX    = "(\\.)|(,)|(\\/)|(\\\\)|(\\|)|(\\-)|( )";
 	public static final String DOT_REGEX          = "\\.";
+	public static final String DOT                = ".";
 	public static final String COMMA              = ",";
 	public static final String CLOSE_CURLY_BRACES = "}";
 	public static final String NUMBER_SIGN        = "#";
@@ -36,24 +39,21 @@ public class CLMConstant {
 	public static final String SAVE_LUA_TABLE_ERROR           = "Can`t write data: \n%s\nto %s";
 	public static final String SAVE_LUA_TABLE                 = "The file: \"%s\" has been generated";
 	public static final String CREATED_TEMP_FILE_MESSAGE      = "Temp file %s has been created";
+	public static final String CHARACTER_TYPE_MELEE           = "melee";
+	public static final String CHARACTER_TYPE_CASTER          = "caster";
 	
-	public static final String CHARACTER_TYPE_HEAL   = "heal";
-	public static final String CHARACTER_TYPE_DD     = "dd";
-	public static final String CHARACTER_TYPE_CASTER = "caster";
-	public static final String CHARACTER_TYPE_TANK   = "tank";
+	public static final String CLM_ITEMS_TEMPLATE            = "[%s] = {[\"characterType\"] = \"%s\",[\"nickname\"] = \"%s\",[\"wishNumber\"] = \"%s\"}";
+	public static final String INIT_EMPTY_CLM_ITEMS          = "CLM_items = {}";
+	public static final String INIT_CLM_ITEMS                = "CLM_items[%s] = {";
+	public static final String INIT_EMPTY_CLM_WISHLISTS      = "CLM_wishlists = {}";
+	public static final String INIT_CLM_WISHLISTS_TYPE       = "CLM_wishlists_type = {\"%s\", \"%s\"}\n";
+	public static final String INIT_EMPTY_LIST_CLM_WISHLISTS = "CLM_wishlists[\"%s\"] = {}\n";
+	public static final String INIT_ARRAY_CLM_WISHLISTS      = "CLM_wishlists[\"%s\"] = {";
+	public static final String VALUE_IN_LIST                 = "[%s] = %s";
+	public static final String ARRAY_NICKNAME                = "[\"%s\"] = {";
 	
-	public static final String CLM_ITEMS_TEMPLATE             = "[%s] = {[\"characterType\"] = \"%s\",[\"nickname\"] = \"%s\",[\"wishNumber\"] = \"%s\"}";
-	public static final String INIT_EMPTY_CLM_ITEMS           = "CLM_items = {}";
-	public static final String INIT_CLM_ITEMS                 = "CLM_items[%s] = {";
-	public static final String INIT_EMPTY_CLM_WISHLISTS       = "CLM_wishlists = {}";
-	public static final String INIT_CLM_WISHLISTS_TYPE        = "CLM_wishlists_type = {\"%s\", \"%s\", \"%s\", \"%s\"%s}";
-	public static final String INIT_EMPTY_LIST_CLM_WISHLISTS  = "CLM_wishlists[\"%s\"] = {}%s";
-	public static final String INIT_EMPTY_ARRAY_CLM_WISHLISTS = "CLM_wishlists[\"%s\"][\"%s\"] = {}%s";
-	public static final String INIT_ARRAY_CLM_WISHLISTS       = "CLM_wishlists[\"%s\"][\"%s\"][1] = {";
-	public static final String VALUE_IN_LIST                  = "[%s] = %s,";
-	
-	public static final int INT_3   = 3;
-	public static final int INT_4   = 4;
-	public static final int INT_100 = 100;
-	public static final int INT_150 = 150;
+	public static final int NICKNAME_CELL = 4;
+	public static final int INT_4         = 4;
+	public static final int INT_100       = 100;
+	public static final int INT_150       = 150;
 }

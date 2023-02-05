@@ -267,20 +267,27 @@ public class CLMService {
     private StringBuilder populateWishlistSB(List<CLMCharType> wishlists) {
         log.info("Started writing data to CLMWishlists LuaTable");
         StringBuilder wishlistsSB = new StringBuilder();
-        wishlistsSB.append(String.format(INIT_CLM_WISHLISTS_TYPE, CHARACTER_TYPE_MELEE, CHARACTER_TYPE_CASTER));
         wishlistsSB.append(INIT_EMPTY_CLM_WISHLISTS);
+        StringJoiner joinerCharTypeName = new StringJoiner(COMMA);
         wishlists.forEach(clmCharType -> {
             String charTypeName = clmCharType.getCharTypeName();
+            joinerCharTypeName.add(String.format(VALUE_LIST, charTypeName));
             wishlistsSB.append(String.format(INIT_EMPTY_LIST_CLM_WISHLISTS, charTypeName));
             wishlistsSB.append(String.format(INIT_ARRAY_CLM_WISHLISTS, charTypeName));
+            StringJoiner joinerNickname = new StringJoiner(COMMA);
             StringJoiner joinerUserData = new StringJoiner(COMMA);
             clmCharType.getUserInfos().forEach(clmUser -> {
                 StringJoiner joinerUserItem = new StringJoiner(COMMA);
                 clmUser.getItems().stream().map(clmUserItem -> String.format(VALUE_IN_LIST, clmUserItem.getWishNumber(), clmUserItem.getItemId(), clmUserItem.getMarker())).forEach(joinerUserItem::add);
-                joinerUserData.add(String.format(ARRAY_NICKNAME, clmUser.getNickname(), joinerUserItem));
+                String nickname = clmUser.getNickname();
+                joinerUserData.add(String.format(ARRAY_NICKNAME, nickname, joinerUserItem));
+                joinerNickname.add(String.format(VALUE_LIST, nickname));
             });
-            wishlistsSB.append(joinerUserData).append(CLOSE_CURLY_BRACES).append(StringUtils.LF);
+            wishlistsSB.append(joinerUserData).append(StringUtils.LF).append(CLOSE_CURLY_BRACES).append(StringUtils.LF);
+            wishlistsSB.insert(NumberUtils.INTEGER_ZERO, String.format(ARRAY_CLM_NICKNAME, charTypeName, joinerNickname));
         });
+        wishlistsSB.insert(NumberUtils.INTEGER_ZERO, INIT_ARRAY_CLM_NICKNAME);
+        wishlistsSB.insert(NumberUtils.INTEGER_ZERO, String.format(INIT_CLM_WISHLISTS_TYPE, joinerCharTypeName));
         log.info("Completed writing data to CLMItems LuaTable");
         return wishlistsSB;
     }
@@ -292,11 +299,11 @@ public class CLMService {
         clmItems.forEach((key, value) -> {
             itemsSB.append(String.format(INIT_CLM_ITEMS, key));
             StringJoiner joiner = new StringJoiner(COMMA);
-            IntStream.range(0, value.size()).forEach(i -> {
+            IntStream.range(NumberUtils.INTEGER_ZERO, value.size()).forEach(i -> {
                 CLMItem clmItem = value.get(i);
                 joiner.add((String.format(CLM_ITEMS_TEMPLATE, i + NumberUtils.INTEGER_ONE, clmItem.getCharacterType(), clmItem.getNickname(), clmItem.getWishNumber())));
             });
-            itemsSB.append(joiner).append(CLOSE_CURLY_BRACES).append(StringUtils.LF);
+            itemsSB.append(joiner).append(StringUtils.LF).append(CLOSE_CURLY_BRACES).append(StringUtils.LF);
         });
         log.info("Completed writing data to CLMItems LuaTable");
         return itemsSB;

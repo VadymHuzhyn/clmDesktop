@@ -13,6 +13,6 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Wishlist {
 
-    String charTypeName;
+    String charType;
     List<UserInfoDTO> userInfos = new ArrayList<>();
 }

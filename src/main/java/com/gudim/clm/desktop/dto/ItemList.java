@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 @Data
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Itemlist {
+public class ItemList {
 
     String wishNumber;
     String nickname;

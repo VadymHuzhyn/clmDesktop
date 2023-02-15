@@ -10,9 +10,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ItemInfoDTO {
 
+    String itemId;
     String bossName;
-    String itemLink;
-    String itemName;
     String wishNumber;
     Boolean marker;
 }

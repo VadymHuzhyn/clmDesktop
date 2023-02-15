@@ -1,7 +1,7 @@
 package com.gudim.clm.desktop;
 
-import com.gudim.clm.desktop.dto.CLMLuaTable;
-import com.gudim.clm.desktop.dto.CLMData;
+import com.gudim.clm.desktop.dto.ItemList;
+import com.gudim.clm.desktop.dto.Wishlist;
 import com.gudim.clm.desktop.service.CLMService;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -14,6 +14,8 @@ import net.rgielen.fxweaver.core.FxmlView;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 import static com.gudim.clm.desktop.util.CLMConstant.*;
 
@@ -39,10 +41,12 @@ public class CLMController {
     @FXML
     public void convertXLSToJSON() {
         clmService.downloadXLSXFromDrive();
-        CLMData clmData = clmService.getDataFromXLSX();
-        CLMLuaTable clmLuaTable = clmService.luaTableMapper(clmData);
-        clmService.saveLuaTableFile(clmLuaTable.getWishListsSB(), directoryPath.getText() + PATH_CLM_WISHLISTS_LUA);
-        clmService.saveLuaTableFile(clmLuaTable.getItemsSB(), directoryPath.getText() + PATH_CLM_ITEMS_LUA);
+        List<Wishlist> wishlists = clmService.getWishlist();
+        Map<String, List<ItemList>> itemList = clmService.getItemList();
+        StringBuilder wishlistTable = clmService.generateWishlistTable(wishlists);
+        StringBuilder itemListTable = clmService.generateItemListTable(itemList);
+        clmService.saveLuaTableFile(wishlistTable, directoryPath.getText() + PATH_CLM_WISHLISTS_LUA);
+        clmService.saveLuaTableFile(itemListTable, directoryPath.getText() + PATH_CLM_ITEMS_LUA);
         clmService.removeTempFile();
     }
 

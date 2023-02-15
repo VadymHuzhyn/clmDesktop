@@ -38,8 +38,8 @@ public class CLMConstant {
     public static final String SAVE_LUA_TABLE_ERROR = "Can`t write data: \n%s\nto %s";
     public static final String SAVE_LUA_TABLE = "The file: \"%s\" has been generated";
     public static final String CREATED_TEMP_FILE_MESSAGE = "Temp file %s has been created";
-    public static final String CHARACTER_TYPE_MELEE = "melee";
-    public static final String CHARACTER_TYPE_CASTER = "caster";
+    public static final String CHARACTER_TYPE_MELEE = "Милики";
+    public static final String CHARACTER_TYPE_CASTER = "Кастеры";
     public static final String CLM_ITEMS_TEMPLATE = "\n\t[%s] = {[\"characterType\"] = \"%s\", [\"nickname\"] = \"%s\", [\"wishNumber\"] = %s}";
     public static final String INIT_EMPTY_CLM_ITEMS = "CLMItems = {}\n";
     public static final String INIT_CLM_ITEMS = "CLMItems[%s] = {";

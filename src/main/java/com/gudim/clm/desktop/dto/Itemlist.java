@@ -1,4 +1,4 @@
-package com.gudim.clm.desktop.dto.items;
+package com.gudim.clm.desktop.dto;
 
 import lombok.AccessLevel;
 import lombok.Data;
@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 @Data
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CLMItem {
+public class Itemlist {
 
     String wishNumber;
     String nickname;

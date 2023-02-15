@@ -50,7 +50,7 @@ public class CLMConstant {
     public static final String INIT_ARRAY_CLM_NICKNAME = "CLMNickname = {}\n";
     public static final String ARRAY_NICKNAME = "\n\t[\"%s\"] = {%s\n\t}";
     public static final String ARRAY_CLM_NICKNAME = "CLMNickname[\"%s\"] = {%s\n}\n";
-    public static final String VALUE_IN_LIST = "\n\t\t[%s] = {[\"itemId\"] = %s, [\"marker\"] = %s}";
+    public static final String VALUE_IN_LIST = "\n\t\t[%s] = {[\"itemId\"] = %s, [\"wishNumber\"] = %s, [\"marker\"] = %s, [\"boss\"] = \"%s\"}";
     public static final String VALUE_LIST = "\n\t\"%s\"";
     public static final int INTEGER_THREE = 3;
     public static final int INTEGER_FOUR = 4;

@@ -6,7 +6,9 @@ import com.gudim.clm.desktop.dto.ItemInfoDTO;
 import com.gudim.clm.desktop.dto.ItemList;
 import com.gudim.clm.desktop.dto.UserInfoDTO;
 import com.gudim.clm.desktop.dto.Wishlist;
+import com.gudim.clm.desktop.util.BlizzardUtil;
 import com.gudim.clm.desktop.util.GoogleUtil;
+import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +20,7 @@ import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -29,6 +32,7 @@ import java.security.GeneralSecurityException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.gudim.clm.desktop.util.CLMConstant.*;
@@ -36,9 +40,11 @@ import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 @Service
 @Log4j2
+@Data
 public class CLMService {
+    private String accessToken;
 
-    public void downloadXLSXFromDrive() {
+    public String downloadXLSXFromDrive() {
         try (OutputStream outputStream = Files.newOutputStream(Paths.get(TEMP_FILE_NAME))) {
             Drive drive = GoogleUtil.getGoogleDriveData();
             File file = drive.files().get(SHEETS_ID).setQuotaUser(UUID.randomUUID().toString()).execute();
@@ -46,8 +52,11 @@ public class CLMService {
             drive.files().export(file.getId(), XLSX_MIME).executeAndDownloadTo(byteArrayOutputStream);
             byteArrayOutputStream.writeTo(outputStream);
             log.info(String.format(CREATED_TEMP_FILE_MESSAGE, TEMP_FILE_NAME));
+            return "200";
         } catch (IOException | GeneralSecurityException e) {
             log.error(ExceptionUtils.getStackTrace(e));
+            GoogleUtil.removeCredential();
+            return "404";
         }
     }
 
@@ -139,8 +148,11 @@ public class CLMService {
     }
 
     private ItemInfoDTO itemInfoMapper(String itemId, String wishNumber, boolean isMarked, String bossName) {
+        JSONObject itemInfo = BlizzardUtil.getItemInfo(accessToken, itemId, ITEM_INFO_URL);
+        String itemName = itemInfo.getString("name");
         ItemInfoDTO clmItemInfo = new ItemInfoDTO();
         clmItemInfo.setItemId(itemId);
+        clmItemInfo.setItemName(itemName);
         clmItemInfo.setBossName(bossName);
         clmItemInfo.setWishNumber(wishNumber);
         clmItemInfo.setMarker(isMarked);
@@ -202,7 +214,7 @@ public class CLMService {
         ItemList itemlist = new ItemList();
         itemlist.setCharacterType(characterType);
         itemlist.setNickname(nickname);
-        itemlist.setWishNumber(wishNumber);
+        itemlist.setWishNumber(Integer.valueOf(wishNumber));
         return itemlist;
     }
 
@@ -342,7 +354,7 @@ public class CLMService {
                 List<ItemInfoDTO> items = userInfoDTO.getItems();
                 IntStream.range(0, items.size()).forEach(i -> {
                     ItemInfoDTO itemInfoDTO = items.get(i);
-                    String format = String.format(VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, itemInfoDTO.getItemId(), itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
+                    String format = String.format(VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, itemInfoDTO.getItemId(), itemInfoDTO.getItemName(), itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
                     joinerUserItem.add(format);
                 });
                 String nickname = userInfoDTO.getNickname();
@@ -362,7 +374,9 @@ public class CLMService {
         log.info("Started writing data to CLMItems LuaTable");
         StringBuilder itemsSB = new StringBuilder();
         itemsSB.append(INIT_EMPTY_CLM_ITEMS);
-        clmItems.forEach((key, value) -> {
+        clmItems.entrySet().forEach(entry -> {
+            String key = entry.getKey();
+            List<ItemList> value = formatItemList(entry);
             itemsSB.append(String.format(INIT_CLM_ITEMS, key));
             StringJoiner joiner = new StringJoiner(COMMA);
             IntStream.range(NumberUtils.INTEGER_ZERO, value.size()).forEach(i -> {
@@ -375,6 +389,17 @@ public class CLMService {
         return itemsSB;
     }
 
+    private List<ItemList> formatItemList(Map.Entry<String, List<ItemList>> entry) {
+        List<ItemList> value = entry.getValue();
+        Set<ItemList> itemListSet = new HashSet<>(value);
+        value = new ArrayList<>(itemListSet);
+        return value.stream()
+                .sorted(Comparator.comparing(ItemList::getCharacterType)
+                        .thenComparing(ItemList::getWishNumber)
+                        .thenComparing(ItemList::getNickname))
+                .collect(Collectors.toList());
+    }
+
     public void saveLuaTableFile(StringBuilder stringBuilder, String path) {
         java.io.File file = new java.io.File(path);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
@@ -382,15 +407,6 @@ public class CLMService {
             log.info(String.format(SAVE_LUA_TABLE, path));
         } catch (IOException e) {
             log.error(String.format(SAVE_LUA_TABLE_ERROR, stringBuilder, path));
-        }
-    }
-
-    public void removeTempFile() {
-        try {
-            Files.delete(Paths.get(TEMP_FILE_NAME));
-            log.info(String.format(MESSAGE_HAS_BEEN_REMOVED, TEMP_FILE_NAME));
-        } catch (IOException e) {
-            log.error(String.format(REMOVE_FILE_ERROR_MESSAGE, TEMP_FILE_NAME));
         }
     }
 }

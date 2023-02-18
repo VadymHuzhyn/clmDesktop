@@ -13,7 +13,7 @@ public class CLMConstant {
     public static final String TITLE = "Consul Loot Master v0.0.4";
     public static final String USER_ID = "user";
     public static final String USER_HOME_DIR = "user.home";
-    public static final String STORE_CHILD_DIR = ".store/oauth2_sample";
+    public static final String STORE_CHILD_DIR = ".store/clm";
     public static final String CREDENTIALS_JSON = "/credentials.json";
     public static final String GOOGLE_DRIVE_API_URL = "https://www.googleapis.com/auth/drive";
     public static final String SHEETS_ID = "1qOuISkQ7goUL2ij99Fv-6qERegUGglVKj6VtpqmMmq8";
@@ -50,7 +50,7 @@ public class CLMConstant {
     public static final String INIT_ARRAY_CLM_NICKNAME = "CLMNickname = {}\n";
     public static final String ARRAY_NICKNAME = "\n\t[\"%s\"] = {%s\n\t}";
     public static final String ARRAY_CLM_NICKNAME = "CLMNickname[\"%s\"] = {%s\n}\n";
-    public static final String VALUE_IN_LIST = "\n\t\t[%s] = {[\"itemId\"] = %s, [\"wishNumber\"] = %s, [\"marker\"] = %s, [\"boss\"] = \"%s\"}";
+    public static final String VALUE_IN_LIST = "\n\t\t[%s] = {[\"itemId\"] = %s, [\"itemName\"] = \"%s\", [\"wishNumber\"] = %s, [\"marker\"] = %s, [\"boss\"] = \"%s\"}";
     public static final String VALUE_LIST = "\n\t\"%s\"";
     public static final int INTEGER_THREE = 3;
     public static final int INTEGER_FOUR = 4;
@@ -76,4 +76,8 @@ public class CLMConstant {
     public static final Map<String, String> PPW_MAP = new ImmutableMap.Builder<String, String>().put(HEAD_SLOT, "45638").put(SHOULDERS_SLOT, "45656").put(TORSO_SLOT, "45632").put(GLOVES_SLOT, "45641").put(LEGS_SLOT, "45653").build();
     public static final Map<String, String> WHS_MAP = new ImmutableMap.Builder<String, String>().put(HEAD_SLOT, "45639").put(SHOULDERS_SLOT, "45657").put(TORSO_SLOT, "45633").put(GLOVES_SLOT, "45642").put(LEGS_SLOT, "45654").build();
     public static final Map<String, String> DMRD_MAP = new ImmutableMap.Builder<String, String>().put(HEAD_SLOT, "45640").put(SHOULDERS_SLOT, "45658").put(TORSO_SLOT, "45634").put(GLOVES_SLOT, "45643").put(LEGS_SLOT, "45655").build();
+
+    public static final String ITEM_MEDIA_URL = "https://eu.api.blizzard.com/data/wow/media/item/%s?namespace=static-classic-eu&locale=ru_RU";
+    public static final String ITEM_INFO_URL = "https://eu.api.blizzard.com/data/wow/item/%s?namespace=static-classic-eu&locale=ru_RU";
+
 }

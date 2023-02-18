@@ -14,4 +14,5 @@ public class ItemInfoDTO {
     String bossName;
     String wishNumber;
     Boolean marker;
+    String itemName;
 }

@@ -3,6 +3,8 @@ package com.gudim.clm.desktop;
 import com.gudim.clm.desktop.dto.ItemList;
 import com.gudim.clm.desktop.dto.Wishlist;
 import com.gudim.clm.desktop.service.CLMService;
+import com.gudim.clm.desktop.util.BlizzardUtil;
+import com.gudim.clm.desktop.util.CLMUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -40,14 +42,20 @@ public class CLMController {
 
     @FXML
     public void convertXLSToJSON() {
-        clmService.downloadXLSXFromDrive();
-        List<Wishlist> wishlists = clmService.getWishlist();
-        Map<String, List<ItemList>> itemList = clmService.getItemList();
-        StringBuilder wishlistTable = clmService.generateWishlistTable(wishlists);
-        StringBuilder itemListTable = clmService.generateItemListTable(itemList);
-        clmService.saveLuaTableFile(wishlistTable, directoryPath.getText() + PATH_CLM_WISHLISTS_LUA);
-        clmService.saveLuaTableFile(itemListTable, directoryPath.getText() + PATH_CLM_ITEMS_LUA);
-        clmService.removeTempFile();
+        String statusCode = clmService.downloadXLSXFromDrive();
+        if ("200".equals(statusCode)) {
+            clmService.setAccessToken(BlizzardUtil.getToken());
+            List<Wishlist> wishlists = clmService.getWishlist();
+            Map<String, List<ItemList>> itemList = clmService.getItemList();
+            StringBuilder wishlistTable = clmService.generateWishlistTable(wishlists);
+            StringBuilder itemListTable = clmService.generateItemListTable(itemList);
+            clmService.saveLuaTableFile(wishlistTable, directoryPath.getText() + PATH_CLM_WISHLISTS_LUA);
+            clmService.saveLuaTableFile(itemListTable, directoryPath.getText() + PATH_CLM_ITEMS_LUA);
+            CLMUtil.removeFile(TEMP_FILE_NAME);
+        } else {
+            showError(AlertType.ERROR, "File not found", "Please check the correct account and if you have access to the file. if not, contact the owner of the file and request access.");
+        }
+
     }
 
     @FXML

@@ -56,4 +56,10 @@ public class GoogleUtil {
         return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver(),
                 new CLMBrowserService()).authorize(USER_ID);
     }
+
+    public static void removeCredential() {
+        File file = new File(System.getProperty(USER_HOME_DIR), STORE_CHILD_DIR);
+        String absolutePath = file.getAbsolutePath();
+        CLMUtil.removeFile(absolutePath);
+    }
 }

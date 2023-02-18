@@ -10,7 +10,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ItemList {
 
-    String wishNumber;
+    Integer wishNumber;
     String nickname;
     String characterType;
 }

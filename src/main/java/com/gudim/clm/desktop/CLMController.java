@@ -3,7 +3,6 @@ package com.gudim.clm.desktop;
 import com.gudim.clm.desktop.dto.ItemList;
 import com.gudim.clm.desktop.dto.Wishlist;
 import com.gudim.clm.desktop.service.CLMService;
-import com.gudim.clm.desktop.util.BlizzardUtil;
 import com.gudim.clm.desktop.util.CLMUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -44,7 +43,6 @@ public class CLMController {
     public void convertXLSToJSON() {
         String statusCode = clmService.downloadXLSXFromDrive();
         if ("200".equals(statusCode)) {
-            clmService.setAccessToken(BlizzardUtil.getToken());
             List<Wishlist> wishlists = clmService.getWishlist();
             Map<String, List<ItemList>> itemList = clmService.getItemList();
             StringBuilder wishlistTable = clmService.generateWishlistTable(wishlists);

@@ -6,7 +6,7 @@ import com.gudim.clm.desktop.dto.ItemInfoDTO;
 import com.gudim.clm.desktop.dto.ItemList;
 import com.gudim.clm.desktop.dto.UserInfoDTO;
 import com.gudim.clm.desktop.dto.Wishlist;
-import com.gudim.clm.desktop.util.BlizzardUtil;
+import com.gudim.clm.desktop.util.CLMUtil;
 import com.gudim.clm.desktop.util.GoogleUtil;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -148,11 +148,8 @@ public class CLMService {
     }
 
     private ItemInfoDTO itemInfoMapper(String itemId, String wishNumber, boolean isMarked, String bossName) {
-        JSONObject itemInfo = BlizzardUtil.getItemInfo(accessToken, itemId, ITEM_INFO_URL);
-        String itemName = itemInfo.getString("name");
         ItemInfoDTO clmItemInfo = new ItemInfoDTO();
         clmItemInfo.setItemId(itemId);
-        clmItemInfo.setItemName(itemName);
         clmItemInfo.setBossName(bossName);
         clmItemInfo.setWishNumber(wishNumber);
         clmItemInfo.setMarker(isMarked);
@@ -342,6 +339,7 @@ public class CLMService {
         StringBuilder wishlistsSB = new StringBuilder();
         wishlistsSB.append(INIT_EMPTY_CLM_WISHLISTS);
         StringJoiner joinerCharTypeName = new StringJoiner(COMMA);
+        JSONObject itemsInfo = CLMUtil.getJsonObjectFromResource("item_wotlk.json");
         wishlists.forEach(wishlist -> {
             String charType = wishlist.getCharType();
             joinerCharTypeName.add(String.format(VALUE_LIST, charType));
@@ -354,7 +352,11 @@ public class CLMService {
                 List<ItemInfoDTO> items = userInfoDTO.getItems();
                 IntStream.range(0, items.size()).forEach(i -> {
                     ItemInfoDTO itemInfoDTO = items.get(i);
-                    String format = String.format(VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, itemInfoDTO.getItemId(), itemInfoDTO.getItemName(), itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
+                    JSONObject itemInfo = itemsInfo.getJSONObject(itemInfoDTO.getItemId());
+                    Integer icon = itemInfo.getInt("icon");
+                    String name = itemInfo.getString("name");
+                    String link = itemInfo.getString("link");
+                    String format = String.format(VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, icon, name, link, itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
                     joinerUserItem.add(format);
                 });
                 String nickname = userInfoDTO.getNickname();

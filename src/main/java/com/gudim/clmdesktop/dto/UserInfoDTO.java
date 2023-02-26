@@ -1,4 +1,4 @@
-package com.gudim.clm.desktop.dto.wishlists;
+package com.gudim.clmdesktop.dto;
 
 import lombok.AccessLevel;
 import lombok.Data;
@@ -11,8 +11,8 @@ import java.util.List;
 @Data
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CLMUser {
+public class UserInfoDTO {
 
     String nickname;
-    List<CLMUserItem> items = new ArrayList<>();
+    List<ItemInfoDTO> items = new ArrayList<>();
 }

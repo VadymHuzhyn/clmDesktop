@@ -1,5 +1,6 @@
-package com.gudim.clm.desktop;
+package com.gudim.clmdesktop;
 
+import com.gudim.clmdesktop.util.CLMConstant;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Parent;
@@ -13,8 +14,6 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.Objects;
-
-import static com.gudim.clm.desktop.util.CLMConstant.TITLE;
 
 @Log4j2
 public class JavaFxApplication extends Application {
@@ -38,7 +37,7 @@ public class JavaFxApplication extends Application {
                         .toExternalForm());
         stage.getIcons().add(new Image(Objects.requireNonNull(
                 this.getClass().getResourceAsStream("/static/image/clmLogo.png"))));
-        stage.setTitle(TITLE);
+        stage.setTitle(CLMConstant.TITLE);
         stage.setScene(scene);
         stage.show();
     }

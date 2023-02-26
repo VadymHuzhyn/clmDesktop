@@ -1,4 +1,4 @@
-package com.gudim.clm.desktop;
+package com.gudim.clmdesktop;
 
 import javafx.application.Application;
 

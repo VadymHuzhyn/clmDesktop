@@ -13,7 +13,7 @@ plugins {
 apply plugin: 'io.github.fvarrui.javapackager.plugin'
 
 group 'com.gudim'
-version '0.0.4'
+version '1.0'
 
 repositories {
     mavenCentral()

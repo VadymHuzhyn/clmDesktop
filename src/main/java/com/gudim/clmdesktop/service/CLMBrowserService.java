@@ -1,4 +1,4 @@
-package com.gudim.clm.desktop.service;
+package com.gudim.clmdesktop.service;
 
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import lombok.extern.log4j.Log4j2;

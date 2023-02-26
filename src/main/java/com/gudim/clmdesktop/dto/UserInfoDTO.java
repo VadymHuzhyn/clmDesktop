@@ -1,4 +1,4 @@
-package com.gudim.clm.desktop.dto;
+package com.gudim.clmdesktop.dto;
 
 import lombok.AccessLevel;
 import lombok.Data;

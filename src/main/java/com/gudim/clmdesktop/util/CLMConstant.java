@@ -1,4 +1,4 @@
-package com.gudim.clm.desktop.util;
+package com.gudim.clmdesktop.util;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.AccessLevel;

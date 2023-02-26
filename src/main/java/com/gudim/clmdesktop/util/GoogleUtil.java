@@ -1,4 +1,4 @@
-package com.gudim.clm.desktop.util;
+package com.gudim.clmdesktop.util;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -13,8 +13,8 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.Drive.Builder;
-import com.gudim.clm.desktop.CLMController;
-import com.gudim.clm.desktop.service.CLMBrowserService;
+import com.gudim.clmdesktop.CLMController;
+import com.gudim.clmdesktop.service.CLMBrowserService;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 
@@ -25,8 +25,6 @@ import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
-import static com.gudim.clm.desktop.util.CLMConstant.*;
-
 @UtilityClass
 @Log4j2
 public class GoogleUtil {
@@ -34,16 +32,16 @@ public class GoogleUtil {
     public static Drive getGoogleDriveData() throws GeneralSecurityException, IOException {
         GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        InputStream resourceAsStream = CLMController.class.getResourceAsStream(CREDENTIALS_JSON);
+        InputStream resourceAsStream = CLMController.class.getResourceAsStream(CLMConstant.CREDENTIALS_JSON);
         Credential credential = getCredential(jsonFactory, httpTransport, resourceAsStream);
         return new Builder(httpTransport, jsonFactory, credential)
-                .setApplicationName(APPLICATION_NAME).build();
+                .setApplicationName(CLMConstant.APPLICATION_NAME).build();
     }
 
     public static Credential getCredential(JsonFactory jsonFactory, HttpTransport httpTransport,
                                            InputStream resourceAsStream) throws IOException {
         FileDataStoreFactory dataStoreFactory = new FileDataStoreFactory(
-                new File(System.getProperty(USER_HOME_DIR), STORE_CHILD_DIR));
+                new File(System.getProperty(CLMConstant.USER_HOME_DIR), CLMConstant.STORE_CHILD_DIR));
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(jsonFactory,
                 new InputStreamReader(
                         resourceAsStream));
@@ -51,14 +49,14 @@ public class GoogleUtil {
                 jsonFactory,
                 clientSecrets,
                 Collections.singleton(
-                        GOOGLE_DRIVE_API_URL))
+                        CLMConstant.GOOGLE_DRIVE_API_URL))
                 .setDataStoreFactory(dataStoreFactory).build();
         return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver(),
-                new CLMBrowserService()).authorize(USER_ID);
+                new CLMBrowserService()).authorize(CLMConstant.USER_ID);
     }
 
     public static void removeCredential() {
-        File file = new File(System.getProperty(USER_HOME_DIR), STORE_CHILD_DIR);
+        File file = new File(System.getProperty(CLMConstant.USER_HOME_DIR), CLMConstant.STORE_CHILD_DIR);
         String absolutePath = file.getAbsolutePath();
         CLMUtil.removeFile(absolutePath);
     }

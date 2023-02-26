@@ -1,13 +1,14 @@
-package com.gudim.clm.desktop.service;
+package com.gudim.clmdesktop.service;
 
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
-import com.gudim.clm.desktop.dto.ItemInfoDTO;
-import com.gudim.clm.desktop.dto.ItemList;
-import com.gudim.clm.desktop.dto.UserInfoDTO;
-import com.gudim.clm.desktop.dto.Wishlist;
-import com.gudim.clm.desktop.util.CLMUtil;
-import com.gudim.clm.desktop.util.GoogleUtil;
+import com.gudim.clmdesktop.dto.ItemInfoDTO;
+import com.gudim.clmdesktop.dto.ItemList;
+import com.gudim.clmdesktop.dto.UserInfoDTO;
+import com.gudim.clmdesktop.dto.Wishlist;
+import com.gudim.clmdesktop.util.CLMConstant;
+import com.gudim.clmdesktop.util.CLMUtil;
+import com.gudim.clmdesktop.util.GoogleUtil;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ObjectUtils;
@@ -23,7 +24,10 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
@@ -35,7 +39,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.gudim.clm.desktop.util.CLMConstant.*;
 import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 @Service
@@ -45,13 +48,13 @@ public class CLMService {
     private String accessToken;
 
     public String downloadXLSXFromDrive() {
-        try (OutputStream outputStream = Files.newOutputStream(Paths.get(TEMP_FILE_NAME))) {
+        try (OutputStream outputStream = Files.newOutputStream(Paths.get(CLMConstant.TEMP_FILE_NAME))) {
             Drive drive = GoogleUtil.getGoogleDriveData();
-            File file = drive.files().get(SHEETS_ID).setQuotaUser(UUID.randomUUID().toString()).execute();
+            File file = drive.files().get(CLMConstant.SHEETS_ID).setQuotaUser(UUID.randomUUID().toString()).execute();
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            drive.files().export(file.getId(), XLSX_MIME).executeAndDownloadTo(byteArrayOutputStream);
+            drive.files().export(file.getId(), CLMConstant.XLSX_MIME).executeAndDownloadTo(byteArrayOutputStream);
             byteArrayOutputStream.writeTo(outputStream);
-            log.info(String.format(CREATED_TEMP_FILE_MESSAGE, TEMP_FILE_NAME));
+            log.info(String.format(CLMConstant.CREATED_TEMP_FILE_MESSAGE, CLMConstant.TEMP_FILE_NAME));
             return "200";
         } catch (IOException | GeneralSecurityException e) {
             log.error(ExceptionUtils.getStackTrace(e));
@@ -63,7 +66,7 @@ public class CLMService {
     public List<Wishlist> getWishlist() {
         XSSFSheet sheet;
         List<Wishlist> wishlists = new ArrayList<>();
-        try (FileInputStream fileInputStream = new FileInputStream(TEMP_FILE_NAME); XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
+        try (FileInputStream fileInputStream = new FileInputStream(CLMConstant.TEMP_FILE_NAME); XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
             for (int sheetNumber = NumberUtils.INTEGER_ONE; sheetNumber < workbook.getNumberOfSheets(); sheetNumber++) {
                 Wishlist wishlist = new Wishlist();
                 wishlist.setCharType(getCharacterType(sheetNumber));
@@ -80,7 +83,7 @@ public class CLMService {
     }
 
     private void populateUserInfos(XSSFSheet sheet, Wishlist wishlist, Row nicknameRow) {
-        IntStream.range(INTEGER_FOUR, nicknameRow.getLastCellNum()).forEach(nicknameCellNumber -> {
+        IntStream.range(CLMConstant.INTEGER_FOUR, nicknameRow.getLastCellNum()).forEach(nicknameCellNumber -> {
             Cell nicknameCell = nicknameRow.getCell(nicknameCellNumber, MissingCellPolicy.RETURN_NULL_AND_BLANK);
             String nicknameCellColour = getColourHex(nicknameCell);
             String nickname = getCellValue(nicknameCell);
@@ -94,7 +97,7 @@ public class CLMService {
     }
 
     private void populateItemInfos(XSSFSheet sheet, int nicknameCellNumber, String nicknameCellColour, UserInfoDTO userInfoDTO) {
-        for (int itemRowNumber = NumberUtils.INTEGER_ONE; itemRowNumber < Math.min(INTEGER_OHF, sheet.getLastRowNum()); itemRowNumber++) {
+        for (int itemRowNumber = NumberUtils.INTEGER_ONE; itemRowNumber < Math.min(CLMConstant.INTEGER_OHF, sheet.getLastRowNum()); itemRowNumber++) {
             Row itemRow = sheet.getRow(itemRowNumber);
             String itemId = getItemId(nicknameCellColour, itemRowNumber, itemRow);
             String bossName = getBossName(populateBossNames(sheet), itemRowNumber);
@@ -102,14 +105,14 @@ public class CLMService {
             String wishNumberCellColour = getColourHex(wishNumberCell);
             String wishNumber = getCellValue(wishNumberCell).replace(StringUtils.SPACE, StringUtils.EMPTY);
             if (StringUtils.isNotBlank(itemId) && StringUtils.isNotBlank(wishNumber)) {
-                List<String> wishNumberList = Arrays.asList(wishNumber.replaceAll(DELIMITER_REGEX, DOT).split(DOT_REGEX));
+                List<String> wishNumberList = Arrays.asList(wishNumber.replaceAll(CLMConstant.DELIMITER_REGEX, CLMConstant.DOT).split(CLMConstant.DOT_REGEX));
                 List<ItemInfoDTO> itemInfoDTOS = userInfoDTO.getItems();
-                boolean isMarked = StringUtils.equals(MARK_HEX_COLOUR, wishNumberCellColour);
-                String wishNumberValue = wishNumberList.get(NumberUtils.INTEGER_ZERO).replace(PLUS, StringUtils.EMPTY);
+                boolean isMarked = StringUtils.equals(CLMConstant.MARK_HEX_COLOUR, wishNumberCellColour);
+                String wishNumberValue = wishNumberList.get(NumberUtils.INTEGER_ZERO).replace(CLMConstant.PLUS, StringUtils.EMPTY);
                 itemInfoDTOS.add(itemInfoMapper(itemId, wishNumberValue, isMarked, bossName));
                 if (wishNumberList.size() == NumberUtils.INTEGER_TWO) {
-                    isMarked = StringUtils.contains(wishNumber, PLUS);
-                    wishNumberValue = wishNumberList.get(NumberUtils.INTEGER_ONE).replace(PLUS, StringUtils.EMPTY);
+                    isMarked = StringUtils.contains(wishNumber, CLMConstant.PLUS);
+                    wishNumberValue = wishNumberList.get(NumberUtils.INTEGER_ONE).replace(CLMConstant.PLUS, StringUtils.EMPTY);
                     itemInfoDTOS.add(itemInfoMapper(itemId, wishNumberValue, isMarked, bossName));
                 }
             }
@@ -129,7 +132,7 @@ public class CLMService {
     private LinkedHashMap<String, List<Integer>> populateBossNames(XSSFSheet sheet) {
         LinkedHashMap<String, List<Integer>> boss = new LinkedHashMap<>();
         String bossNameCellValue = StringUtils.EMPTY;
-        for (int rowNum = NumberUtils.INTEGER_ONE; rowNum < Math.min(INTEGER_OHF, sheet.getLastRowNum()); rowNum++) {
+        for (int rowNum = NumberUtils.INTEGER_ONE; rowNum < Math.min(CLMConstant.INTEGER_OHF, sheet.getLastRowNum()); rowNum++) {
             Row row = sheet.getRow(rowNum);
             Cell bossCell = row.getCell(NumberUtils.INTEGER_ZERO, MissingCellPolicy.RETURN_NULL_AND_BLANK);
             String temp = getCellValue(bossCell);
@@ -159,7 +162,7 @@ public class CLMService {
     public Map<String, List<ItemList>> getItemList() {
         XSSFSheet sheet;
         Map<String, List<ItemList>> items = new HashMap<>();
-        try (FileInputStream fileInputStream = new FileInputStream(TEMP_FILE_NAME); XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
+        try (FileInputStream fileInputStream = new FileInputStream(CLMConstant.TEMP_FILE_NAME); XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
             for (int sheetNumber = NumberUtils.INTEGER_ONE; sheetNumber < workbook.getNumberOfSheets(); sheetNumber++) {
                 sheet = workbook.getSheetAt(sheetNumber);
                 String characterType = getCharacterType(sheetNumber);
@@ -174,7 +177,7 @@ public class CLMService {
     }
 
     private void populateUser(XSSFSheet sheet, Map<String, List<ItemList>> items, String characterType, Row nicknameRow) {
-        IntStream.range(INTEGER_FOUR, nicknameRow.getLastCellNum()).forEach(nicknameCellNumber -> {
+        IntStream.range(CLMConstant.INTEGER_FOUR, nicknameRow.getLastCellNum()).forEach(nicknameCellNumber -> {
             Cell nicknameCell = nicknameRow.getCell(nicknameCellNumber, MissingCellPolicy.RETURN_NULL_AND_BLANK);
             String nicknameCellColour = getColourHex(nicknameCell);
             String nickname = getCellValue(nicknameCell);
@@ -185,22 +188,22 @@ public class CLMService {
     }
 
     private void populateItem(XSSFSheet sheet, Map<String, List<ItemList>> items, String characterType, int nicknameCellNumber, String nicknameCellColour, String nickname) {
-        for (int itemRowNumber = NumberUtils.INTEGER_ONE; itemRowNumber < Math.min(INTEGER_OHF, sheet.getLastRowNum()); itemRowNumber++) {
+        for (int itemRowNumber = NumberUtils.INTEGER_ONE; itemRowNumber < Math.min(CLMConstant.INTEGER_OHF, sheet.getLastRowNum()); itemRowNumber++) {
             Row itemRow = sheet.getRow(itemRowNumber);
             String itemId = getItemId(nicknameCellColour, itemRowNumber, itemRow);
             Cell wishNumberCell = itemRow.getCell(nicknameCellNumber, MissingCellPolicy.RETURN_NULL_AND_BLANK);
             String wishNumberCellColour = getColourHex(wishNumberCell);
             String wishNumber = getCellValue(wishNumberCell).replace(StringUtils.SPACE, StringUtils.EMPTY);
             if (StringUtils.isNotBlank(itemId) && StringUtils.isNotBlank(wishNumber)) {
-                List<String> wishNumberList = Arrays.asList(wishNumber.replaceAll(DELIMITER_REGEX, DOT).split(DOT_REGEX));
-                if (wishNumberList.size() == NumberUtils.INTEGER_ONE && !StringUtils.equals(MARK_HEX_COLOUR, wishNumberCellColour)) {
-                    wishNumber = wishNumberList.get(NumberUtils.INTEGER_ZERO).replace(PLUS, StringUtils.EMPTY);
+                List<String> wishNumberList = Arrays.asList(wishNumber.replaceAll(CLMConstant.DELIMITER_REGEX, CLMConstant.DOT).split(CLMConstant.DOT_REGEX));
+                if (wishNumberList.size() == NumberUtils.INTEGER_ONE && !StringUtils.equals(CLMConstant.MARK_HEX_COLOUR, wishNumberCellColour)) {
+                    wishNumber = wishNumberList.get(NumberUtils.INTEGER_ZERO).replace(CLMConstant.PLUS, StringUtils.EMPTY);
                     populateItemsMap(items, itemId, itemListMapper(characterType, nickname, wishNumber));
                 }
-                if (wishNumberList.size() == NumberUtils.INTEGER_TWO && !StringUtils.equals(MARK_HEX_COLOUR, wishNumberCellColour)) {
+                if (wishNumberList.size() == NumberUtils.INTEGER_TWO && !StringUtils.equals(CLMConstant.MARK_HEX_COLOUR, wishNumberCellColour)) {
                     wishNumberList.forEach(value -> populateItemsMap(items, itemId, itemListMapper(characterType, nickname, value)));
-                } else if (wishNumberList.size() == NumberUtils.INTEGER_TWO && StringUtils.equals(MARK_HEX_COLOUR, wishNumberCellColour) && !StringUtils.contains(wishNumber, PLUS)) {
-                    wishNumber = wishNumberList.get(NumberUtils.INTEGER_ONE).replace(PLUS, StringUtils.EMPTY);
+                } else if (wishNumberList.size() == NumberUtils.INTEGER_TWO && StringUtils.equals(CLMConstant.MARK_HEX_COLOUR, wishNumberCellColour) && !StringUtils.contains(wishNumber, CLMConstant.PLUS)) {
+                    wishNumber = wishNumberList.get(NumberUtils.INTEGER_ONE).replace(CLMConstant.PLUS, StringUtils.EMPTY);
                     populateItemsMap(items, itemId, itemListMapper(characterType, nickname, wishNumber));
                 }
             }
@@ -227,11 +230,11 @@ public class CLMService {
 
     private String getCharacterType(int sheetNumber) {
         if (sheetNumber == NumberUtils.INTEGER_ONE) {
-            return CHARACTER_TYPE_CASTER;
+            return CLMConstant.CHARACTER_TYPE_CASTER;
         } else if (sheetNumber == NumberUtils.INTEGER_TWO) {
-            return CHARACTER_TYPE_MELEE;
+            return CLMConstant.CHARACTER_TYPE_MELEE;
         } else {
-            throw new IllegalStateException(String.format(UNEXPECTED_VALUE_ERROR_MESSAGE, sheetNumber));
+            throw new IllegalStateException(String.format(CLMConstant.UNEXPECTED_VALUE_ERROR_MESSAGE, sheetNumber));
         }
     }
 
@@ -244,10 +247,10 @@ public class CLMService {
                 break;
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
-                    SimpleDateFormat sdf = new SimpleDateFormat(PATTERN_MM_DD);
+                    SimpleDateFormat sdf = new SimpleDateFormat(CLMConstant.PATTERN_MM_DD);
                     result = sdf.format(cell.getDateCellValue());
                 } else {
-                    DecimalFormat decimalFormat = new DecimalFormat(NUMBER_SIGN);
+                    DecimalFormat decimalFormat = new DecimalFormat(CLMConstant.NUMBER_SIGN);
                     decimalFormat.setRoundingMode(RoundingMode.CEILING);
                     result = isDecimalPointZero(cell.getNumericCellValue()) ? decimalFormat.format(cell.getNumericCellValue()) : Double.valueOf(cell.getNumericCellValue());
                 }
@@ -263,7 +266,7 @@ public class CLMService {
             case BLANK:
                 break;
             default:
-                throw new IllegalStateException(String.format(UNEXPECTED_VALUE_ERROR_MESSAGE, cellType));
+                throw new IllegalStateException(String.format(CLMConstant.UNEXPECTED_VALUE_ERROR_MESSAGE, cellType));
         }
         return result.toString();
     }
@@ -279,18 +282,18 @@ public class CLMService {
     }
 
     private boolean isDecimalPointZero(double numericCellValue) {
-        BigDecimal bd = BigDecimal.valueOf((numericCellValue - Math.floor(numericCellValue)) * INTEGER_HUNDRED);
-        bd = bd.setScale(INTEGER_FOUR, RoundingMode.HALF_DOWN);
+        BigDecimal bd = BigDecimal.valueOf((numericCellValue - Math.floor(numericCellValue)) * CLMConstant.INTEGER_HUNDRED);
+        bd = bd.setScale(CLMConstant.INTEGER_FOUR, RoundingMode.HALF_DOWN);
         return bd.intValue() == NumberUtils.INTEGER_ZERO;
     }
 
     private String getItemId(String nicknameCellColour, int itemRowNumber, Row itemRow) {
         String itemId;
-        if (itemRowNumber < INTEGER_SIX) {
-            String tokenId = getCellValue(itemRow.getCell(INTEGER_THREE, MissingCellPolicy.RETURN_NULL_AND_BLANK));
+        if (itemRowNumber < CLMConstant.INTEGER_SIX) {
+            String tokenId = getCellValue(itemRow.getCell(CLMConstant.INTEGER_THREE, MissingCellPolicy.RETURN_NULL_AND_BLANK));
             itemId = updateTokenId(nicknameCellColour, tokenId);
         } else {
-            itemId = getCellValue(itemRow.getCell(INTEGER_THREE, MissingCellPolicy.RETURN_NULL_AND_BLANK));
+            itemId = getCellValue(itemRow.getCell(CLMConstant.INTEGER_THREE, MissingCellPolicy.RETURN_NULL_AND_BLANK));
         }
         return itemId;
     }
@@ -298,24 +301,24 @@ public class CLMService {
     private String updateTokenId(String classColour, String itemId) {
         String result;
         switch (classColour) {
-            case PRIEST_HEX_COLOUR:
-            case PALADIN_HEX_COLOUR:
-            case WARLOCK_HEX_COLOUR:
-                result = PPW_MAP.get(itemId);
+            case CLMConstant.PRIEST_HEX_COLOUR:
+            case CLMConstant.PALADIN_HEX_COLOUR:
+            case CLMConstant.WARLOCK_HEX_COLOUR:
+                result = CLMConstant.PPW_MAP.get(itemId);
                 break;
-            case WARRIOR_HEX_COLOUR:
-            case HUNTER_HEX_COLOUR:
-            case SHAMAN_HEX_COLOUR:
-                result = WHS_MAP.get(itemId);
+            case CLMConstant.WARRIOR_HEX_COLOUR:
+            case CLMConstant.HUNTER_HEX_COLOUR:
+            case CLMConstant.SHAMAN_HEX_COLOUR:
+                result = CLMConstant.WHS_MAP.get(itemId);
                 break;
-            case DRUID_HEX_COLOUR:
-            case MAGE_HEX_COLOUR:
-            case ROGUE_HEX_COLOUR:
-            case DEATH_KNIGHT_HEX_COLOUR:
-                result = DMRD_MAP.get(itemId);
+            case CLMConstant.DRUID_HEX_COLOUR:
+            case CLMConstant.MAGE_HEX_COLOUR:
+            case CLMConstant.ROGUE_HEX_COLOUR:
+            case CLMConstant.DEATH_KNIGHT_HEX_COLOUR:
+                result = CLMConstant.DMRD_MAP.get(itemId);
                 break;
             default:
-                throw new IllegalStateException(String.format(UNEXPECTED_VALUE_ERROR_MESSAGE, classColour));
+                throw new IllegalStateException(String.format(CLMConstant.UNEXPECTED_VALUE_ERROR_MESSAGE, classColour));
         }
         return result;
     }
@@ -337,18 +340,18 @@ public class CLMService {
     public StringBuilder generateWishlistTable(List<Wishlist> wishlists) {
         log.info("Started writing data to CLMWishlists LuaTable");
         StringBuilder wishlistsSB = new StringBuilder();
-        wishlistsSB.append(INIT_EMPTY_CLM_WISHLISTS);
-        StringJoiner joinerCharTypeName = new StringJoiner(COMMA);
-        JSONObject itemsInfo = CLMUtil.getJsonObjectFromResource("item_wotlk.json");
+        wishlistsSB.append(CLMConstant.INIT_EMPTY_CLM_WISHLISTS);
+        StringJoiner joinerCharTypeName = new StringJoiner(CLMConstant.COMMA);
+        JSONObject itemsInfo = CLMUtil.getJsonObjectFromResource("Item.json");
         wishlists.forEach(wishlist -> {
             String charType = wishlist.getCharType();
-            joinerCharTypeName.add(String.format(VALUE_LIST, charType));
-            wishlistsSB.append(String.format(INIT_EMPTY_LIST_CLM_WISHLISTS, charType));
-            wishlistsSB.append(String.format(INIT_ARRAY_CLM_WISHLISTS, charType));
-            StringJoiner joinerNickname = new StringJoiner(COMMA);
-            StringJoiner joinerUserData = new StringJoiner(COMMA);
+            joinerCharTypeName.add(String.format(CLMConstant.VALUE_LIST, charType));
+            wishlistsSB.append(String.format(CLMConstant.INIT_EMPTY_LIST_CLM_WISHLISTS, charType));
+            wishlistsSB.append(String.format(CLMConstant.INIT_ARRAY_CLM_WISHLISTS, charType));
+            StringJoiner joinerNickname = new StringJoiner(CLMConstant.COMMA);
+            StringJoiner joinerUserData = new StringJoiner(CLMConstant.COMMA);
             wishlist.getUserInfos().forEach(userInfoDTO -> {
-                StringJoiner joinerUserItem = new StringJoiner(COMMA);
+                StringJoiner joinerUserItem = new StringJoiner(CLMConstant.COMMA);
                 List<ItemInfoDTO> items = userInfoDTO.getItems();
                 IntStream.range(0, items.size()).forEach(i -> {
                     ItemInfoDTO itemInfoDTO = items.get(i);
@@ -356,18 +359,18 @@ public class CLMService {
                     Integer icon = itemInfo.getInt("icon");
                     String name = itemInfo.getString("name");
                     String link = itemInfo.getString("link");
-                    String format = String.format(VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, icon, name, link, itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
+                    String format = String.format(CLMConstant.VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, icon, name, link, itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
                     joinerUserItem.add(format);
                 });
                 String nickname = userInfoDTO.getNickname();
-                joinerUserData.add(String.format(ARRAY_NICKNAME, nickname, joinerUserItem));
-                joinerNickname.add(String.format(VALUE_LIST, nickname));
+                joinerUserData.add(String.format(CLMConstant.ARRAY_NICKNAME, nickname, joinerUserItem));
+                joinerNickname.add(String.format(CLMConstant.VALUE_LIST, nickname));
             });
-            wishlistsSB.append(joinerUserData).append(StringUtils.LF).append(CLOSE_CURLY_BRACES).append(StringUtils.LF);
-            wishlistsSB.insert(NumberUtils.INTEGER_ZERO, String.format(ARRAY_CLM_NICKNAME, charType, joinerNickname));
+            wishlistsSB.append(joinerUserData).append(StringUtils.LF).append(CLMConstant.CLOSE_CURLY_BRACES).append(StringUtils.LF);
+            wishlistsSB.insert(NumberUtils.INTEGER_ZERO, String.format(CLMConstant.ARRAY_CLM_NICKNAME, charType, joinerNickname));
         });
-        wishlistsSB.insert(NumberUtils.INTEGER_ZERO, INIT_ARRAY_CLM_NICKNAME);
-        wishlistsSB.insert(NumberUtils.INTEGER_ZERO, String.format(INIT_CLM_WISHLISTS_TYPE, joinerCharTypeName));
+        wishlistsSB.insert(NumberUtils.INTEGER_ZERO, CLMConstant.INIT_ARRAY_CLM_NICKNAME);
+        wishlistsSB.insert(NumberUtils.INTEGER_ZERO, String.format(CLMConstant.INIT_CLM_WISHLISTS_TYPE, joinerCharTypeName));
         log.info("Completed writing data to CLMItems LuaTable");
         return wishlistsSB;
     }
@@ -375,17 +378,17 @@ public class CLMService {
     public StringBuilder generateItemListTable(Map<String, List<ItemList>> clmItems) {
         log.info("Started writing data to CLMItems LuaTable");
         StringBuilder itemsSB = new StringBuilder();
-        itemsSB.append(INIT_EMPTY_CLM_ITEMS);
+        itemsSB.append(CLMConstant.INIT_EMPTY_CLM_ITEMS);
         clmItems.entrySet().forEach(entry -> {
             String key = entry.getKey();
             List<ItemList> value = formatItemList(entry);
-            itemsSB.append(String.format(INIT_CLM_ITEMS, key));
-            StringJoiner joiner = new StringJoiner(COMMA);
+            itemsSB.append(String.format(CLMConstant.INIT_CLM_ITEMS, key));
+            StringJoiner joiner = new StringJoiner(CLMConstant.COMMA);
             IntStream.range(NumberUtils.INTEGER_ZERO, value.size()).forEach(i -> {
                 ItemList itemlist = value.get(i);
-                joiner.add((String.format(CLM_ITEMS_TEMPLATE, i + NumberUtils.INTEGER_ONE, itemlist.getCharacterType(), itemlist.getNickname(), itemlist.getWishNumber())));
+                joiner.add((String.format(CLMConstant.CLM_ITEMS_TEMPLATE, i + NumberUtils.INTEGER_ONE, itemlist.getCharacterType(), itemlist.getNickname(), itemlist.getWishNumber())));
             });
-            itemsSB.append(joiner).append(StringUtils.LF).append(CLOSE_CURLY_BRACES).append(StringUtils.LF);
+            itemsSB.append(joiner).append(StringUtils.LF).append(CLMConstant.CLOSE_CURLY_BRACES).append(StringUtils.LF);
         });
         log.info("Completed writing data to CLMItems LuaTable");
         return itemsSB;
@@ -400,16 +403,6 @@ public class CLMService {
                         .thenComparing(ItemList::getWishNumber)
                         .thenComparing(ItemList::getNickname))
                 .collect(Collectors.toList());
-    }
-
-    public void saveLuaTableFile(StringBuilder stringBuilder, String path) {
-        java.io.File file = new java.io.File(path);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.append(stringBuilder);
-            log.info(String.format(SAVE_LUA_TABLE, path));
-        } catch (IOException e) {
-            log.error(String.format(SAVE_LUA_TABLE_ERROR, stringBuilder, path));
-        }
     }
 }
 

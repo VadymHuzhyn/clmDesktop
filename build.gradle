@@ -41,7 +41,7 @@ javapackager {
     name = 'CLM'
     organizationName = 'Gudim'
     organizationEmail = 'clmwowaddon@gmail.com'
-    mainClass = 'com.gudim.clm.desktop.SpringBootApplication'
+    mainClass = 'com.gudim.clmdesktop.SpringBootApplication'
     bundleJre = true
     generateInstaller = false
     jdkPath = file('C:\\Program Files\\Java\\jdk1.8.0_311')

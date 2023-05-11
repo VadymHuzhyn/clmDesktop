@@ -1,0 +1,24 @@
+{
+  "properties": [
+    {
+      "name": "clm.item.data.file",
+      "type": "java.lang.String",
+      "description": "Location of data file."
+    },
+    {
+      "name": "clm.expansion.id",
+      "type": "java.lang.String",
+      "description": "Number of expansion."
+    },
+    {
+      "name": "clm.json.file",
+      "type": "java.lang.String",
+      "description": "Location of json file."
+    },
+    {
+      "name": "clm.lua.file",
+      "type": "java.lang.String",
+      "description": "Location of lua table file."
+    }
+  ]
+}

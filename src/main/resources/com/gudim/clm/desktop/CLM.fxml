@@ -5,7 +5,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml" maxHeight="-Infinity" maxWidth="-Infinity"
       minHeight="-Infinity"
       minWidth="-Infinity" prefHeight="155.0" prefWidth="503.0"
-      xmlns="http://javafx.com/javafx" fx:controller="com.gudim.clmdesktop.CLMController">
+      xmlns="http://javafx.com/javafx" fx:controller="com.gudim.clm.desktop.CLMController">
     <BorderPane prefHeight="200.0" prefWidth="200.0">
         <bottom>
             <Separator BorderPane.alignment="CENTER" prefHeight="3.0" prefWidth="200.0"/>

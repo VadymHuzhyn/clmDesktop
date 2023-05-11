@@ -1,6 +1,6 @@
-package com.gudim.clmdesktop;
+package com.gudim.clm.desktop;
 
-import com.gudim.clmdesktop.util.CLMConstant;
+import com.gudim.clm.desktop.util.CLMConstant;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Parent;
@@ -16,7 +16,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import java.util.Objects;
 
 @Log4j2
-public class JavaFxApplication extends Application {
+public class ClmDesktopFxApplication extends Application {
 
     private ConfigurableApplicationContext applicationContext;
 
@@ -24,7 +24,7 @@ public class JavaFxApplication extends Application {
     public void init() {
         String[] args = getParameters().getRaw().toArray(new String[NumberUtils.INTEGER_ZERO]);
         this.applicationContext = new SpringApplicationBuilder().headless(false).sources(
-                SpringBootApplication.class).run(args);
+                ClmDesktopApplication.class).run(args);
     }
 
     @Override

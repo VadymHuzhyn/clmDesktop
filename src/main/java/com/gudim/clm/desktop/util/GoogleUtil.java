@@ -1,4 +1,4 @@
-package com.gudim.clmdesktop.util;
+package com.gudim.clm.desktop.util;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -13,8 +13,8 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.Drive.Builder;
-import com.gudim.clmdesktop.CLMController;
-import com.gudim.clmdesktop.service.CLMBrowserService;
+import com.gudim.clm.desktop.CLMController;
+import com.gudim.clm.desktop.service.CLMBrowserService;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 

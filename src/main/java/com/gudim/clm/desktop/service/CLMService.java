@@ -1,14 +1,17 @@
-package com.gudim.clmdesktop.service;
+package com.gudim.clm.desktop.service;
 
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
-import com.gudim.clmdesktop.dto.ItemInfoDTO;
-import com.gudim.clmdesktop.dto.ItemList;
-import com.gudim.clmdesktop.dto.UserInfoDTO;
-import com.gudim.clmdesktop.dto.Wishlist;
-import com.gudim.clmdesktop.util.CLMConstant;
-import com.gudim.clmdesktop.util.CLMUtil;
-import com.gudim.clmdesktop.util.GoogleUtil;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.gudim.clm.desktop.dto.ItemInfoDTO;
+import com.gudim.clm.desktop.dto.ItemList;
+import com.gudim.clm.desktop.dto.UserInfoDTO;
+import com.gudim.clm.desktop.dto.Wishlist;
+import com.gudim.clm.desktop.util.CLMConstant;
+import com.gudim.clm.desktop.util.CLMUtil;
+import com.gudim.clm.desktop.util.GoogleUtil;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ObjectUtils;
@@ -21,13 +24,11 @@ import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
@@ -83,7 +84,8 @@ public class CLMService {
     }
 
     private void populateUserInfos(XSSFSheet sheet, Wishlist wishlist, Row nicknameRow) {
-        IntStream.range(CLMConstant.INTEGER_FOUR, nicknameRow.getLastCellNum()).forEach(nicknameCellNumber -> {
+        int bound = nicknameRow.getLastCellNum();
+        for (int nicknameCellNumber = CLMConstant.INTEGER_FOUR; nicknameCellNumber < bound; nicknameCellNumber++) {
             Cell nicknameCell = nicknameRow.getCell(nicknameCellNumber, MissingCellPolicy.RETURN_NULL_AND_BLANK);
             String nicknameCellColour = getColourHex(nicknameCell);
             String nickname = getCellValue(nicknameCell);
@@ -93,7 +95,7 @@ public class CLMService {
                 populateItemInfos(sheet, nicknameCellNumber, nicknameCellColour, userInfoDTO);
                 wishlist.getUserInfos().add(userInfoDTO);
             }
-        });
+        }
     }
 
     private void populateItemInfos(XSSFSheet sheet, int nicknameCellNumber, String nicknameCellColour, UserInfoDTO userInfoDTO) {
@@ -359,7 +361,7 @@ public class CLMService {
                     Integer icon = itemInfo.getInt("icon");
                     String name = itemInfo.getString("name");
                     String link = itemInfo.getString("link");
-                    String format = String.format(CLMConstant.VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, icon, name, link, itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
+                    String format = String.format(CLMConstant.VALUE_IN_LIST, i + NumberUtils.INTEGER_ONE, itemInfoDTO.getItemId(), icon, name, link, itemInfoDTO.getWishNumber(), itemInfoDTO.getMarker(), itemInfoDTO.getBossName());
                     joinerUserItem.add(format);
                 });
                 String nickname = userInfoDTO.getNickname();
@@ -398,11 +400,79 @@ public class CLMService {
         List<ItemList> value = entry.getValue();
         Set<ItemList> itemListSet = new HashSet<>(value);
         value = new ArrayList<>(itemListSet);
-        return value.stream()
-                .sorted(Comparator.comparing(ItemList::getCharacterType)
-                        .thenComparing(ItemList::getWishNumber)
-                        .thenComparing(ItemList::getNickname))
-                .collect(Collectors.toList());
+        return value.stream().sorted(Comparator.comparing(ItemList::getCharacterType).thenComparing(ItemList::getWishNumber).thenComparing(ItemList::getNickname)).collect(Collectors.toList());
+    }
+
+    @Nullable
+    public List<Wishlist> getWishlist(JsonElement jsonElement) {
+        Map<String, Map<String, Map<String, ItemInfoDTO>>> stringMapMap = new Gson().fromJson(jsonElement, new TypeToken<Map<String, Map<String, Map<String, ItemInfoDTO>>>>() {
+        }.getType());
+        List<Wishlist> wishlists = new ArrayList<>();
+        for (Map.Entry<String, Map<String, Map<String, ItemInfoDTO>>> charTypeEntry : stringMapMap.entrySet()) {
+            Wishlist wishlist = new Wishlist();
+            wishlist.setCharType(charTypeEntry.getKey());
+            List<UserInfoDTO> userInfos = wishlist.getUserInfos();
+            for (Map.Entry<String, Map<String, ItemInfoDTO>> stringMapEntry : charTypeEntry.getValue().entrySet()) {
+                UserInfoDTO userInfoDTO = new UserInfoDTO();
+                userInfoDTO.setNickname(stringMapEntry.getKey());
+                List<ItemInfoDTO> items = userInfoDTO.getItems();
+                for (Map.Entry<String, ItemInfoDTO> stringBooleanEntry : stringMapEntry.getValue().entrySet()) {
+                    ItemInfoDTO itemInfoDTO = new ItemInfoDTO();
+                    itemInfoDTO.setMarker(stringBooleanEntry.getValue().getMarker());
+                    itemInfoDTO.setItemId(stringBooleanEntry.getValue().getItemId());
+                    itemInfoDTO.setWishNumber(stringBooleanEntry.getKey());
+                    items.add(itemInfoDTO);
+                }
+                userInfos.add(userInfoDTO);
+            }
+            wishlists.add(wishlist);
+        }
+        return wishlists;
+    }
+
+    public void updateData(List<Wishlist> wishlists) {
+        try (FileInputStream fileInputStream = new FileInputStream(CLMConstant.TEMP_FILE_NAME); XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream)) {
+            for (int sheetNumber = NumberUtils.INTEGER_ONE; sheetNumber < workbook.getNumberOfSheets(); sheetNumber++) {
+                XSSFSheet sheet = workbook.getSheetAt(sheetNumber);
+                for (Wishlist wishlist : wishlists) {
+                    if (wishlist.getCharType().equals(getCharacterType(sheetNumber))) {
+                        Row nicknameRow = sheet.getRow(sheet.getFirstRowNum());
+                        for (int nicknameCellNumber = CLMConstant.INTEGER_FOUR; nicknameCellNumber < nicknameRow.getLastCellNum(); nicknameCellNumber++) {
+                            Cell nicknameCell = nicknameRow.getCell(nicknameCellNumber, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                            String nicknameCellColour = getColourHex(nicknameCell);
+                            String nickname = getCellValue(nicknameCell);
+                            for (UserInfoDTO userInfo : wishlist.getUserInfos()) {
+                                if (userInfo.getNickname().equals(nickname)) {
+                                    for (int itemRowNumber = NumberUtils.INTEGER_ONE; itemRowNumber < Math.min(CLMConstant.INTEGER_OHF, sheet.getLastRowNum()); itemRowNumber++) {
+                                        Row itemRow = sheet.getRow(itemRowNumber);
+                                        String itemId = getItemId(nicknameCellColour, itemRowNumber, itemRow);
+                                        for (ItemInfoDTO item : userInfo.getItems()) {
+                                            if (item.getItemId().equals(itemId)) {
+                                                Cell wishNumberCell = itemRow.getCell(nicknameCellNumber, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                                                String wishNumberCellColour = getColourHex(wishNumberCell);
+                                                String wishNumber = getCellValue(wishNumberCell);
+                                                if (StringUtils.isNotBlank(itemId) && StringUtils.isNotBlank(wishNumber)) {
+                                                    String[] wishNumberList = wishNumber.replaceAll(CLMConstant.DELIMITER_REGEX, CLMConstant.DOT).split(CLMConstant.DOT_REGEX);
+                                                    for (String w : wishNumberList) {
+
+                                                    }
+
+                                                    boolean isMarked = StringUtils.equals(CLMConstant.MARK_HEX_COLOUR, wishNumberCellColour);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
 

@@ -1,19 +1,29 @@
-package com.gudim.clmdesktop.util;
+package com.gudim.clm.desktop.util;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.jse.JsePlatform;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
 
-import static com.gudim.clmdesktop.util.CLMConstant.*;
+import static com.gudim.clm.desktop.util.CLMConstant.*;
 
 @UtilityClass
 @Log4j2
@@ -44,13 +54,21 @@ public class CLMUtil {
         return new JSONObject(itemsInfo);
     }
 
-    public void saveLuaTableFile(StringBuilder stringBuilder, String path) {
-        File file = new File(path);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+    public void saveFile(StringBuilder stringBuilder, String filePath) {
+        Path path = Paths.get(filePath);
+        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
             writer.append(stringBuilder);
-            log.info(String.format(SAVE_LUA_TABLE, path));
+            log.info(String.format(SAVE_FILE, path));
         } catch (IOException e) {
-            log.error(String.format(SAVE_LUA_TABLE_ERROR, stringBuilder, path));
+            log.error(String.format(SAVE_FILE_ERROR, stringBuilder, path));
         }
     }
+
+    public JsonElement getLuaTable(String luaFile, String luaTableName) {
+        Globals gl = JsePlatform.standardGlobals();
+        gl.loadfile("script/Util.lua").call();
+        String json = gl.get("getJSON").call(LuaValue.valueOf(luaFile), LuaValue.valueOf(luaTableName)).toString();
+        return JsonParser.parseString(json);
+    }
+
 }

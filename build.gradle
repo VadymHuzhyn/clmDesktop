@@ -6,17 +6,21 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '2.7.6'
-    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'org.springframework.boot' version "2.7.6"
+    id 'io.spring.dependency-management' version "1.1.0"
 }
 
 apply plugin: 'io.github.fvarrui.javapackager.plugin'
 
 group 'com.gudim'
 version '1.0'
+setSourceCompatibility(JavaVersion.VERSION_1_8)
+setTargetCompatibility(JavaVersion.VERSION_1_8)
 
 repositories {
     mavenCentral()
+    mavenLocal()
+    google()
 }
 
 dependencies {
@@ -31,22 +35,27 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.1'
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.11'
     implementation 'org.json:json:20220924'
+    implementation 'org.luaj:luaj-jse:3.0.1'
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
     testCompileOnly 'org.projectlombok:lombok:1.18.24'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc:2.7.6'
+    implementation 'com.mysql:mysql-connector-j:8.0.32'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:2.7.6'
 }
 
 javapackager {
-    name = 'CLM'
-    organizationName = 'Gudim'
-    organizationEmail = 'clmwowaddon@gmail.com'
-    mainClass = 'com.gudim.clmdesktop.SpringBootApplication'
-    bundleJre = true
-    generateInstaller = false
-    jdkPath = file('C:\\Program Files\\Java\\jdk1.8.0_311')
-    jrePath = file('C:\\Program Files\\Java\\jdk1.8.0_311\\jre')
-    createZipball = true
-    administratorRequired = true
-    iconFile = file('src/main/resources/static/image/clmLogo.png')
+    name('CLM')
+    organizationName('Gudim')
+    organizationEmail('clmwowaddon@gmail.com')
+    mainClass('com.gudim.clm.desktop.ClmDesktopApplication')
+    bundleJre(true)
+    generateInstaller(false)
+    jdkPath(file('C:\\Program Files\\Java\\jdk1.8.0_311'))
+    jrePath(file('C:\\Program Files\\Java\\jdk1.8.0_311\\jre'))
+    createZipball(true)
+    administratorRequired(true)
+    iconFile(file('src/main/resources/static/image/clmLogo.png'))
 }
